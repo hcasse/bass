@@ -2,6 +2,18 @@
 
 BASS stands for Basic Architecture Simulation Service and provides a server interface built around the GLISS simulator.
 
+## With `Makefile`
+
+To prepare and compile the application:
+```sh
+$ make setup
+```
+
+To run BASS:
+```sh
+$ make run
+```
+
 ## Dependencies
 
   * [Orchid](https://github.com/hcasse/Orchid)
