@@ -344,13 +344,15 @@ class Session(orc.Session):
 		self.layeredConnexion.weight=10
 	
 	def layeredCreateAcountDialog(self):
+		self.nom= orc.Field(size=20)
 		self.fieldnewUSername= orc.EmailField(size=20)
 		self.fieldnewMdp= orc.PasswordField(size=20)
 		self.buttonCreate= orc.Button("create", on_click= self.eventButtonCreateAccount)
 		self.groupUtilaccount= orc.HGroup([self.buttonCreate, orc.Spring(hexpand=True), self.buttonCancel])
 		self.newusername= orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),self.fieldEmail])
 		self.newmdp= orc.HGroup([orc.Label("Password"), orc.Spring(hexpand=True),self.fieldMdp])
-		self.newlayeredConnexion= orc.LayeredPane([orc.VGroup([self.newusername, self.newmdp,orc.Spring(vexpand=True), self.groupUtilaccount])])
+		self.newNom= orc.HGroup([orc.Label("Username"), orc.Spring(hexpand=True),self.nom])
+		self.newlayeredConnexion= orc.LayeredPane([orc.VGroup([self.newusername, self.newNom,self.newmdp,orc.Spring(vexpand=True), self.groupUtilaccount])])
 		self.newlayeredConnexion.weight=10
 
 	def layeredforgotPassword(self):
