@@ -273,7 +273,8 @@ class Session(orc.Session):
 		pass
 
 	def about(self):
-		pass
+		d=dialog.About(self.page)
+		d.show()
 
 	def eventResetButton(self):
 		print("Button reset appuye")
@@ -449,7 +450,7 @@ class Session(orc.Session):
 		self.r15= orc.HGroup([orc.Label("R15"), orc.Field(size=10)]) 
 
 		#----------------------------------------------------------#
-		
+		#----------------------------------------------------------#
 		
 
 		
@@ -475,9 +476,12 @@ class Session(orc.Session):
 			MyTabConsole("Disassembly", self.consoleDis)
 		])
 
-		self.layeredutil= orc.LayeredPane([self.console])
-		self.layermemory= orc.LayeredPane([orc.Console(init="espace pour memory")])
-		self.layer= orc.LayeredPane([orc.VGroup([self.layeredutil,self.layermemory])])
+
+		#--------------------------Panel de gauche-----------------------------#
+		self.consoleMemory= orc.Console(init="")
+		self.layeredProjet= orc.LayeredPane([orc.Label("Panel qui contiendra les templates a vous de metrre les templates a l'interieur (et aussi ce qui se passe quand on choisit un template) le panel se trouve a la ligne 482")])
+		self.tabMemoryProjet=orc.TabbedPane([MyTabConsole("Memory",self.consoleMemory), MyTabConsole("Projet",self.layeredProjet)])
+		self.memoryConsoleGroup=orc.VGroup([self.tabMemoryProjet,self.console])
 		
 		
 		# generate the page
@@ -514,7 +518,7 @@ class Session(orc.Session):
 						orc.Button("first", on_click=self.first)
 					]),
 				self.tabEditeurDisassembly]),
-				self.layeredutil
+				self.memoryConsoleGroup
 				])
 			]),
 			app = self.get_application()
@@ -577,10 +581,13 @@ class Application(orc.Application):
 	def __init__(self):
 		orc.Application.__init__(self,
 			name = "bass",
-			authors = ['H. Cassé'],
+			authors = ['H. Cassé', "W. McJ. Joseph"],
+			version="1.0.1",
+			description = "Machine level simulator.",
 			license = "GPL v3",
 			copyright = "Copyright (c) 2023, University of Toulosue 3",
-			description = "Machine level simulator."
+			website="https://github.com/hcasse/bass"
+
 		)
 
 	def new_session(self, man):
