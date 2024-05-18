@@ -44,12 +44,22 @@ class File:
 class Project:
 
 	def __init__(self, name = "no name"):
+		"""
+			Fonction permattant d'initialiser un objet Project
+
+			  @param name : Le nom du projet \u00e0 initialiser (par d\u00e9faut "no name").
+		"""
 		self.name = name
 		self.files = []
 		self.add_file(File())
 		self.exec_path = None
 
 	def add_file(self, file):
+		"""
+			Fonction permettant d'ajouter un objet File \u00e0 un objet Project.
+
+			  @param file : L'objet File \u00e0 ajouter \u00e0 l'objet Project.
+		"""
 		file.project = self
 		self.files.append(file)
 
@@ -64,6 +74,11 @@ class Project:
 		
 		
 	def loadProject(self, path):
+		"""
+			Fonction permettant d'actualiser un objet Project \u00e0 partir de l'adresse du r\u00e9pertoire syst\u00e8me.
+
+			  @param path : L'adresse du r\u00e9pertoire syst\u00e8me o\u00f9 est stock\u00e9 le projet et ses fichiers.
+		"""
 		self.files = []
 		for f in os.listdir(path):
 			if os.path.isfile( os.path.join(path, f) ):
@@ -74,20 +89,40 @@ class Project:
 class User:
 
 	def __init__(self, name = "anonymous"):
+		"""
+			Fonction permettant d'initialiser un objet User.
+
+			  @param name : Le nom de l'utilisateur (par d\u00e9faut "anonymous").
+		"""
 		self.id = 0
 		self.name = name
 		self.projects = []
 		self.add_project(Project())
 
 	def get_path(self):
+		"""
+			Fonction permettant d'obtenir l'adresse du repertoir syst\u00e8me de l'utilisateur.
+		"""
 		return os.path.join(config.DATADIR, str(self.id))
 
 	def add_project(self, project):
+		"""
+			Fonction permettant d'ajouter un objet Projet \u00e0 un objet User
+
+			  @param project : Le projet \u00e0 ajouter \u00e0 l'objet User.
+		"""
 		project.user = self
 		self.projects.append(project)
 	
 	
 	def loadUser(self, idUser):
+		"""
+			Fonction permettant de se connecter \u00e0 un compte utilisateur.
+
+			  @param idUser : L'identifiant syst\u00e8me de l'utilisateur.
+
+			  @return L'objet User mit \u00e0 jour avec les informations du compte utilisateur rattach\u00e9 \u00e0 l'identifiant syst\u00e8me idUser.
+		"""
 		df = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
 		line = df.loc[df['id']==idUser]
 		self.id = str(idUser)
@@ -103,6 +138,15 @@ class User:
 		return self
 				
 	def sigUser(self, name, email, password):
+		"""
+			Fonction permettant de cr\u00e9er un compte utilisateur \u00e0 partir des informations n\u00e9cessaires.
+
+			  @param name : Le nom, ou pseudo, de l'utilisateur.
+			  @param email : L'email de l'utilisateur.
+			  @param password : Le mot de passe de l'utilisateur.
+
+			  @return Le r\u00e9sultat de la fonction loadUser avec comme param\u00e8tre le nouvel id de l'utilisateur.
+		"""
 		data = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
 		listID = set(data['id'])
 		newID = 1
@@ -112,7 +156,7 @@ class User:
 		with open(os.path.join(config.DATADIR,"account.txt"), "a", encoding="UTF8") as out:
 			out.write(res)
 		os.makedirs( os.path.join(config.DATADIR, str(newID)) )
-		self.loadUser(newID)
+		return self.loadUser(newID)
 
 
 class MyTabEditor(orc.Tab):
@@ -301,7 +345,23 @@ class Session(orc.Session):
 	#----------------------mot de passe oublie----------#
 	def eventforgotPassword(self):
 		self.dialogforgotPassword.show()
+
+
+	def eventError(self, texte):
+		"""
+			Fonction permettant de cr\u00e9er une fen\u00eatre de dialogue d'erreurs. 
+
+			  @param texte : Le texte d'erreur \u00e0 afficher dans la fen\u00eatre de dialogue d'erreurs.
+		"""
+		self.make_dialogError(texte)
+		self.dialogError.show()
 	#----------------------------------------------------#
+	def eventCancelError(self):
+		"""
+			Fonction permettant de faire disparaitre la fen\u00eatre de dialogue d'erreurs.
+		"""
+ 		self.dialogError.hide()
+
  
 	def eventCancelButton(self):
 		self.dialogConnexion.hide()
@@ -345,14 +405,14 @@ class Session(orc.Session):
 		self.layeredConnexion.weight=10
 	
 	def layeredCreateAcountDialog(self):
-		self.nom= orc.Field(size=20)
+		self.filedNom= orc.Field(size=20)
 		self.fieldnewUSername= orc.EmailField(size=20)
 		self.fieldnewMdp= orc.PasswordField(size=20)
 		self.buttonCreate= orc.Button("create", on_click= self.eventButtonCreateAccount)
 		self.groupUtilaccount= orc.HGroup([self.buttonCreate, orc.Spring(hexpand=True), self.buttonCancel])
 		self.newusername= orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),self.fieldEmail])
 		self.newmdp= orc.HGroup([orc.Label("Password"), orc.Spring(hexpand=True),self.fieldMdp])
-		self.newNom= orc.HGroup([orc.Label("Username"), orc.Spring(hexpand=True),self.nom])
+		self.newNom= orc.HGroup([orc.Label("Username"), orc.Spring(hexpand=True),self.fieldNom])
 		self.newlayeredConnexion= orc.LayeredPane([orc.VGroup([self.newusername, self.newNom,self.newmdp,orc.Spring(vexpand=True), self.groupUtilaccount])])
 		self.newlayeredConnexion.weight=10
 
@@ -362,12 +422,32 @@ class Session(orc.Session):
 													 self.fieldRetrieveAccount, orc.Button("Submit", on_click=self.submitEvent),
 													 orc.Button("cancel",on_click=self.eventCancelButton)])])
 
+	def layeredErroR(self, texte):
+		"""
+			Fonction permettant de cr\u00e9er le contenue d'une fen\u00eatre de dialogue servant \u00e0 la gestion des messages d'erreurs.
+
+			  @param texte : Le message d'erreur qui sera contenu par la fen\u00eatre de dialogue.
+		"""
+		self.msgError = orc.HGroup([orc.Label(texte)])
+		self.layeredError = orc.LayeredPane([orc.VGroup([self.msgError, orc.Spring(hexpand=True), orc.Button("Ok", on_click=self.eventCancelError)])])
+		self.layeredError.weight = 10
+
 
 	#---------------------dialog----------------------------#
 	def createDialog(self):
 		self.make_dialog()
+		self.make_dialogError()
 		self.make_dialogNewaccount()
 		self.make_dialogforgotPassword()
+
+	def make_dialogError(self, texte=""):
+		"""
+			Fonction permettant de creer une fen\u00eatre de dialogue pour la gestion des messages erreurs.
+
+			  @param texte : Le message d'erreur qui sera contenu par la fen\u00eatre de dialogue.
+		"""
+		self.layeredErroR(texte)
+		self.dialogError = dialog.Base(self.page, self.layeredError)
 
 	def make_dialog(self):
 		self.layeredconnexionDialog()
@@ -533,47 +613,54 @@ class Session(orc.Session):
 		
 		
 	def login(self):
+		"""
+			La fonction qui r\u00e9cup\u00e8re dans la fen\u00eatre de dialogue les informations entr\u00e9es par l'utilisateur, et permet de se connecter, tout en g\u00e9rant les exceptions.
+		"""
 		email = self.fieldEmail.get_content()
 		mdp = self.fieldMdp.get_content()
-		if (','in email or ',' in mdp):
-			text = "Le caractère spécial , est interdit."
-			# La il faut que tu créer un nouveau label en dessous case avec comme texte text
-			pass # erreur -> email ou mot de passe incorrecte
-		data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
-		data = data.loc[data['email'] == str(email)]
-		if (data.size == 0):
-			text = "L'Email n'est pas reconnu"
-			# La il faut que tu créer un nouveau label en dessous case avec comme texte text
-			pass # erreur -> fonction d'affichage erreur : email non-reconnu
+		if (',' in email or ',' in mdp):
+			text = "Le caract\u00e8re sp\u00e9cial , est interdit."
+			self.eventError(text)
 		else:
-			mdpCourant = data.iloc[0, 3]
-			idUser = data.iloc[0, 0]
-			if (mdpCourant == mdp):
-				self.user = self.user.loadUser(idUser)
-				#
-				# C'est la le problème lié à l'actualisation de la page
-				self.user_label.set_content(self.user.name)
-				self.project_label.set_content(self.user.projects[0].name)
-				# La j'ai mit a jour les deux infos en haut, mais il faut que tu change les valeurs pour les fichiers et les projets dans l'affichages
-				self.connected()
+			data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
+			data = data.loc[data['email'] == str(email)]
+			if (data.size == 0):
+				text = "L'Email n'est pas reconnu"
+				self.eventError(text)
 			else:
-				text = "Le mot de passe est erroné"
-				# La il faut que tu créer un nouveau label en dessous case avec comme texte text
-				pass # erreur -> fonction d'affichage : mot de passe erroné
+				mdpCourant = data.iloc[0, 3]
+				idUser = data.iloc[0, 0]
+				if (mdpCourant == mdp):
+					self.user = self.user.loadUser(idUser)
+					self.user_label.set_content(self.user.name)
+					if len(self.user.projects) == 0:
+						pass
+					else :
+						self.project_label.set_content(self.user.projects[0].name)
+					self.connected()
+				else:
+					text = "Le mot de passe est erron\u00e9"
+					self.eventError(text)
 
-	def sigin(self, name, email, mdp):
+	def sigin(self):
+		"""
+			La fonction qui r\u00e9cup\u00e8re dans la fen\u00eatre de dialogue les informations entr\u00e9es par l'utilisateur, et permet de creer un compte, tout en g\u00e9rant les exceptions.
+		"""
+		name = self.fieldNom.get_content()
+		email = self.fieldEmail.get_content()
+		mdp = self.fieldMdp.get_content()
 		if (','in email or ',' in mdp or ',' in name):
-			text = "Le caractère spécial , est interdit."
-			# La il faut que tu créer un nouveau label en dessous case avec comme texte text
-			pass # erreur -> email ou mot de passe incorrecte
+			text = "Le caract\u00e8re sp\u00e9cial , est interdit."
+			self.eventError(text)
 		data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
 		listID = set(data['id'])
 		if (data.loc[data['email'] == email].size != 0):
-			text = "Un compte existe déjà pour cette adresse email."
-			# La il faut que tu créer un nouveau label en dessous case avec comme texte text
-			pass # erreur -> fonction d'affichage erreur : email déjà
+			text = "Un compte existe d\u00e9j\u00e0 pour cette adresse email."
+			self.eventError(text)
 		else:
-			self.user = self.user.sigUser(name, email, mdp)
+			self.user.sigUser(name, email, mdp)
+			self.login()
+			self.eventButtonCreateAccount()
 		
 
 class Application(orc.Application):
