@@ -47,7 +47,7 @@ class Project:
 		"""
 			Fonction permattant d'initialiser un objet Project
 
-			  @param name : Le nom du projet \u00e0 initialiser (par d\u00e9faut "no name").
+			  @param name : Le nom du projet a initialiser (par defaut "no name").
 		"""
 		self.name = name
 		self.files = []
@@ -56,9 +56,9 @@ class Project:
 
 	def add_file(self, file):
 		"""
-			Fonction permettant d'ajouter un objet File \u00e0 un objet Project.
+			Fonction permettant d'ajouter un objet File a un objet Project.
 
-			  @param file : L'objet File \u00e0 ajouter \u00e0 l'objet Project.
+			  @param file : L'objet File a ajouter a l'objet Project.
 		"""
 		file.project = self
 		self.files.append(file)
@@ -75,9 +75,9 @@ class Project:
 		
 	def loadProject(self, path):
 		"""
-			Fonction permettant d'actualiser un objet Project \u00e0 partir de l'adresse du r\u00e9pertoire syst\u00e8me.
+			Fonction permettant d'actualiser un objet Project a partir de l'adresse du repertoire systeme.
 
-			  @param path : L'adresse du r\u00e9pertoire syst\u00e8me o\u00f9 est stock\u00e9 le projet et ses fichiers.
+			  @param path : L'adresse du repertoire systeme ou est stocke le projet et ses fichiers.
 		"""
 		self.files = []
 		for f in os.listdir(path):
@@ -92,7 +92,7 @@ class User:
 		"""
 			Fonction permettant d'initialiser un objet User.
 
-			  @param name : Le nom de l'utilisateur (par d\u00e9faut "anonymous").
+			  @param name : Le nom de l'utilisateur (par defaut "anonymous").
 		"""
 		self.id = 0
 		self.name = name
@@ -101,15 +101,15 @@ class User:
 
 	def get_path(self):
 		"""
-			Fonction permettant d'obtenir l'adresse du repertoir syst\u00e8me de l'utilisateur.
+			Fonction permettant d'obtenir l'adresse du repertoir systeme de l'utilisateur.
 		"""
 		return os.path.join(config.DATADIR, str(self.id))
 
 	def add_project(self, project):
 		"""
-			Fonction permettant d'ajouter un objet Projet \u00e0 un objet User
+			Fonction permettant d'ajouter un objet Projet a un objet User
 
-			  @param project : Le projet \u00e0 ajouter \u00e0 l'objet User.
+			  @param project : Le projet a ajouter a l'objet User.
 		"""
 		project.user = self
 		self.projects.append(project)
@@ -117,11 +117,11 @@ class User:
 	
 	def loadUser(self, idUser):
 		"""
-			Fonction permettant de se connecter \u00e0 un compte utilisateur.
+			Fonction permettant de se connecter a un compte utilisateur.
 
-			  @param idUser : L'identifiant syst\u00e8me de l'utilisateur.
+			  @param idUser : L'identifiant systeme de l'utilisateur.
 
-			  @return L'objet User mit \u00e0 jour avec les informations du compte utilisateur rattach\u00e9 \u00e0 l'identifiant syst\u00e8me idUser.
+			  @return L'objet User mit a jour avec les informations du compte utilisateur rattache a l'identifiant systeme idUser.
 		"""
 		df = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
 		line = df.loc[df['id']==idUser]
@@ -134,18 +134,19 @@ class User:
 			if not os.path.isfile(dirPath):
 				project = Project(name = p)
 				project.loadProject(path = dirPath)
+				project.user = self
 				self.projects.append(project)
 		return self
 				
 	def sigUser(self, name, email, password):
 		"""
-			Fonction permettant de cr\u00e9er un compte utilisateur \u00e0 partir des informations n\u00e9cessaires.
+			Fonction permettant de creer un compte utilisateur a partir des informations necessaires.
 
 			  @param name : Le nom, ou pseudo, de l'utilisateur.
 			  @param email : L'email de l'utilisateur.
 			  @param password : Le mot de passe de l'utilisateur.
 
-			  @return Le r\u00e9sultat de la fonction loadUser avec comme param\u00e8tre le nouvel id de l'utilisateur.
+			  @return Le resultat de la fonction loadUser avec comme parametre le nouvel id de l'utilisateur.
 		"""
 		data = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
 		listID = set(data['id'])
@@ -157,7 +158,6 @@ class User:
 			out.write(res)
 		os.makedirs( os.path.join(config.DATADIR, str(newID)) )
 		return self.loadUser(newID)
-
 
 class MyTabEditor(orc.Tab):
 
@@ -349,20 +349,20 @@ class Session(orc.Session):
 
 	def eventError(self, texte):
 		"""
-			Fonction permettant de cr\u00e9er une fen\u00eatre de dialogue d'erreurs. 
+			Fonction permettant de creer une fenetre de dialogue d'erreurs. 
 
-			  @param texte : Le texte d'erreur \u00e0 afficher dans la fen\u00eatre de dialogue d'erreurs.
+			  @param texte : Le texte d'erreur a afficher dans la fenetre de dialogue d'erreurs.
 		"""
 		self.make_dialogError(texte)
 		self.dialogError.show()
 	#----------------------------------------------------#
 	def eventCancelError(self):
 		"""
-			Fonction permettant de faire disparaitre la fen\u00eatre de dialogue d'erreurs.
+			Fonction permettant de faire disparaitre la fenetre de dialogue d'erreurs.
 		"""
- 		self.dialogError.hide()
+		self.dialogError.hide()
 
- 
+
 	def eventCancelButton(self):
 		self.dialogConnexion.hide()
 		self.dialogforgotPassword.hide()
@@ -385,7 +385,7 @@ class Session(orc.Session):
 			popup.Menu([
 				orc.Button("Importer", on_click=self.menuImport),
 				orc.Button("Telecharger", on_click=self.menuSave),
-                		orc.Button("Nouveau fichier", on_click=self.menuNew),
+                orc.Button("Nouveau fichier", on_click=self.menuNew),
 			])
 		)
 	
@@ -405,7 +405,7 @@ class Session(orc.Session):
 		self.layeredConnexion.weight=10
 	
 	def layeredCreateAcountDialog(self):
-		self.filedNom= orc.Field(size=20)
+		self.fieldNom= orc.Field(size=20)
 		self.fieldnewUSername= orc.EmailField(size=20)
 		self.fieldnewMdp= orc.PasswordField(size=20)
 		self.buttonCreate= orc.Button("create", on_click= self.eventButtonCreateAccount)
@@ -424,9 +424,9 @@ class Session(orc.Session):
 
 	def layeredErroR(self, texte):
 		"""
-			Fonction permettant de cr\u00e9er le contenue d'une fen\u00eatre de dialogue servant \u00e0 la gestion des messages d'erreurs.
+			Fonction permettant de creer le contenue d'une fenetre de dialogue servant a la gestion des messages d'erreurs.
 
-			  @param texte : Le message d'erreur qui sera contenu par la fen\u00eatre de dialogue.
+			  @param texte : Le message d'erreur qui sera contenu par la fenetre de dialogue.
 		"""
 		self.msgError = orc.HGroup([orc.Label(texte)])
 		self.layeredError = orc.LayeredPane([orc.VGroup([self.msgError, orc.Spring(hexpand=True), orc.Button("Ok", on_click=self.eventCancelError)])])
@@ -442,9 +442,9 @@ class Session(orc.Session):
 
 	def make_dialogError(self, texte=""):
 		"""
-			Fonction permettant de creer une fen\u00eatre de dialogue pour la gestion des messages erreurs.
+			Fonction permettant de creer une fenetre de dialogue pour la gestion des messages erreurs.
 
-			  @param texte : Le message d'erreur qui sera contenu par la fen\u00eatre de dialogue.
+			  @param texte : Le message d'erreur qui sera contenu par la fenetre de dialogue.
 		"""
 		self.layeredErroR(texte)
 		self.dialogError = dialog.Base(self.page, self.layeredError)
@@ -472,10 +472,55 @@ class Session(orc.Session):
 
 	def remove(self):
 		self.cnt = self.cnt - 1
-		self.tabEditeurDisassembly.remove(self.cnt)
+		self.tabEditeurDisassembly.remove( self.tabEditeurDisassembly.current )
+		self.tabEditeurDisassembly.current = -1
+		self.tabEditeurDisassembly.panes.current = -1
+		self.tabEditeurDisassembly.labs.current = -1
+		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
+		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
+		for i in range(len(self.tabEditeurDisassembly.tabs)):
+			self.tabEditeurDisassembly.select(i)
+			self.tabEditeurDisassembly.select(i)
+		if len(self.tabEditeurDisassembly.tabs) > 0 :
+			self.first()
 
 	def first(self):
 		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.get_tab(0))
+
+	def rename(self):
+		pass
+
+	def loadProjectsGroup(self):
+		for i in range(len(self.projectsGroup.get_children())-2):
+			self.projectsGroup.remove(len(self.projectsGroup.get_children())-(i+1))
+		for i in range(len(self.user.projects)):
+			but = self.makeButtonLambdaProject(self.user.projects[i])
+			self.projectsGroup.insert(orc.HGroup([but]))
+
+	def makeButtonLambdaProject(self, project):
+		return orc.Button(project.name, on_click=lambda: self.loadProjectFilesEditor(project))
+		
+
+	def loadProjectFilesEditor(self, projet):
+		self.project_label.set_content(projet.name)
+		for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
+			self.tabEditeurDisassembly.remove(1)
+		for f in projet.files:
+			if ( (".s" in f.name) and not(".elf" in f.name) ):
+				t = MyTabEditor(f.name, orc.Editor(init = f.load()))
+				self.tabEditeurDisassembly.insert(t)
+		
+		self.tabEditeurDisassembly.current = -1
+		self.tabEditeurDisassembly.panes.current = -1
+		self.tabEditeurDisassembly.labs.current = -1
+		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
+		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
+		for i in range(len(self.tabEditeurDisassembly.tabs)):
+			self.tabEditeurDisassembly.select(i)
+			self.tabEditeurDisassembly.select(i)
+		if len(self.tabEditeurDisassembly.tabs) > 0 :
+			self.first()
+
 
 	def get_index(self):
 
@@ -552,15 +597,22 @@ class Session(orc.Session):
 		self.consoleDis=orc.Console(init="Disassembly")
 
 		self.tabEditeurDisassembly = orc.TabbedPane([
-			MyTabEditor("main.s", self.editor),
-			MyTabConsole("Disassembly", self.consoleDis)
+			MyTabConsole("Disassembly", self.consoleDis),
+			MyTabEditor("main.s", self.editor)
 		])
 
 
 		#--------------------------Panel de gauche-----------------------------#
 		self.consoleMemory= orc.Console(init="")
-		self.layeredProjet= orc.LayeredPane([orc.Label("Panel qui contiendra les templates a vous de metrre les templates a l'interieur (et aussi ce qui se passe quand on choisit un template) le panel se trouve a la ligne 482")])
-		self.tabMemoryProjet=orc.TabbedPane([MyTabConsole("Memory",self.consoleMemory), MyTabConsole("Projet",self.layeredProjet)])
+		hlist = []
+		for i in range(len(self.user.projects)):
+			but = self.makeButtonLambdaProject(self.user.projects[i])
+			hlist.append(orc.HGroup([but]))
+		l = [orc.HGroup([orc.Label("Liste de vos Projets :")]), orc.Spring(vexpand=True)]
+		l.extend(hlist)
+		self.projectsGroup = orc.VGroup(l)
+		#self.layeredProjet= orc.LayeredPane([orc.Label("Panel qui contiendra les templates a vous de metrre les templates a l'interieur (et aussi ce qui se passe quand on choisit un template) le panel se trouve a la ligne 482")])
+		self.tabMemoryProjet=orc.TabbedPane([MyTabConsole("Memory",self.consoleMemory), MyTabConsole("Projets",self.projectsGroup)])
 		self.memoryConsoleGroup=orc.VGroup([self.tabMemoryProjet,self.console])
 		
 		
@@ -570,7 +622,7 @@ class Session(orc.Session):
 				orc.Header("BASS", [
 					orc.Button(image = orc.Icon("box")),
 					self.project_label,
-					orc.Button(image = orc.Icon("person"), on_click= self.connexion),
+					orc.Button(image = orc.Icon("person"), on_click=self.connexion),
 					self.user_label,
 				]),
 				orc.ToolBar([
@@ -614,12 +666,12 @@ class Session(orc.Session):
 		
 	def login(self):
 		"""
-			La fonction qui r\u00e9cup\u00e8re dans la fen\u00eatre de dialogue les informations entr\u00e9es par l'utilisateur, et permet de se connecter, tout en g\u00e9rant les exceptions.
+			La fonction qui recupere dans la fenetre de dialogue les informations entrees par l'utilisateur, et permet de se connecter, tout en gerant les exceptions.
 		"""
 		email = self.fieldEmail.get_content()
 		mdp = self.fieldMdp.get_content()
 		if (',' in email or ',' in mdp):
-			text = "Le caract\u00e8re sp\u00e9cial , est interdit."
+			text = "Le caractere special , est interdit."
 			self.eventError(text)
 		else:
 			data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
@@ -636,26 +688,33 @@ class Session(orc.Session):
 					if len(self.user.projects) == 0:
 						pass
 					else :
+						self.loadProjectsGroup()
 						self.project_label.set_content(self.user.projects[0].name)
+						for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
+							self.tabEditeurDisassembly.remove(1)
+						for f in self.user.projects[0].files:
+							if ( (".s" in f.name) and not(".elf" in f.name) ):
+								t = MyTabEditor(f.name, orc.Editor(init = f.load()))
+								self.tabEditeurDisassembly.insert(t)
 					self.connected()
 				else:
-					text = "Le mot de passe est erron\u00e9"
+					text = "Le mot de passe est errone"
 					self.eventError(text)
 
 	def sigin(self):
 		"""
-			La fonction qui r\u00e9cup\u00e8re dans la fen\u00eatre de dialogue les informations entr\u00e9es par l'utilisateur, et permet de creer un compte, tout en g\u00e9rant les exceptions.
+			La fonction qui recupere dans la fenetre de dialogue les informations entrees par l'utilisateur, et permet de creer un compte, tout en gerant les exceptions.
 		"""
 		name = self.fieldNom.get_content()
 		email = self.fieldEmail.get_content()
 		mdp = self.fieldMdp.get_content()
 		if (','in email or ',' in mdp or ',' in name):
-			text = "Le caract\u00e8re sp\u00e9cial , est interdit."
+			text = "Le caractere special , est interdit."
 			self.eventError(text)
 		data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
 		listID = set(data['id'])
 		if (data.loc[data['email'] == email].size != 0):
-			text = "Un compte existe d\u00e9j\u00e0 pour cette adresse email."
+			text = "Un compte existe deja pour cette adresse email."
 			self.eventError(text)
 		else:
 			self.user.sigUser(name, email, mdp)
@@ -668,7 +727,7 @@ class Application(orc.Application):
 	def __init__(self):
 		orc.Application.__init__(self,
 			name = "bass",
-			authors = ['H. Cassé', "W. McJ. Joseph"],
+			authors = ['H. Cassé', "W. McJ. Joseph", "C. Jéré"],
 			version="1.0.1",
 			description = "Machine level simulator.",
 			license = "GPL v3",
