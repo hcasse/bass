@@ -202,6 +202,7 @@ class MyTabConsole(orc.Tab):
 		print("Released", self.label)
 
 
+
 class Session(orc.Session):
 
 	def __init__(self, app, man):
@@ -246,10 +247,16 @@ class Session(orc.Session):
 			self.start_sim()
 
 	def step(self):
-		pass
+		#print("Simulateur ",self.sim)
+		disasm=self.sim.stepInto()
+		self.consoleDis.append(disasm)
+		self.updateFieldRegister()
 
 	def step_over(self):
-		pass
+		while self.sim.nextInstruction()!=self.sim.get_label("_exit"):
+			self.step()
+		self.stop_sim()
+		print(self.sim.get_label("_exit"))
 
 	def run_to(self):
 		pass
@@ -321,6 +328,7 @@ class Session(orc.Session):
 		d.show()
 
 	def eventResetButton(self):
+		self.initRegister()
 		print("Button reset appuye")
 
 	def menuImport(self):
@@ -385,7 +393,7 @@ class Session(orc.Session):
 			popup.Menu([
 				orc.Button("Importer", on_click=self.menuImport),
 				orc.Button("Telecharger", on_click=self.menuSave),
-                orc.Button("Nouveau fichier", on_click=self.menuNew),
+                orc.Button("Nouveau fichier", on_click=self.menuNew)
 			])
 		)
 	
@@ -433,12 +441,46 @@ class Session(orc.Session):
 		self.layeredError.weight = 10
 
 
+	def updateFieldRegister(self):
+		"""
+			Update the register of the interface.
+		"""
+		R = None
+		Ri = None
+		registerBanks=self.sim.getNbRegisterBank()
+		print("NB banque de registre = ",registerBanks)
+		for i in range(0, registerBanks):
+			bank = self.sim.getRegisterBank(i)
+			if bank[0] == 'R':
+				R = bank
+				Ri = i
+			if bank[2] == 1:
+				self.fieldRegistre[16].set_value(self.sim.getRegister(i, 0))
+			for j in range(0, bank[2]):
+					#print(self.sim.getRegister(i,j))
+					self.fieldRegistre[j].set_value(self.sim.getRegister(i, j))
+		
+	def updateRegisterFromField(self):
+		"""
+		Update register value from field.
+		"""
+		pass
+
+	def initRegister(self):
+		"""
+			Initial value of the register.
+		"""
+		for i in range(15):
+			self.fieldRegistre[i].set_value(hex(0))
+		
+
 	#---------------------dialog----------------------------#
 	def createDialog(self):
 		self.make_dialog()
 		self.make_dialogError()
 		self.make_dialogNewaccount()
 		self.make_dialogforgotPassword()
+
 
 	def make_dialogError(self, texte=""):
 		"""
@@ -555,25 +597,33 @@ class Session(orc.Session):
 
 		# initialize console
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
-		#-------------------initialize register------------------
-  
-		self.r0= orc.HGroup([orc.Label("R0"), orc.Field(size=10)])
-		self.r1= orc.HGroup([orc.Label("R1"), orc.Field(size=10)])
-		self.r2= orc.HGroup([orc.Label("R2"), orc.Field(size=10)])
-		self.r3= orc.HGroup([orc.Label("R3"), orc.Field(size=10)])
-		self.r4= orc.HGroup([orc.Label("R4"), orc.Field(size=10)])
-		self.r5= orc.HGroup([orc.Label("R5"), orc.Field(size=10)])
-		self.r6= orc.HGroup([orc.Label("R6"), orc.Field(size=10)])
-		self.r7= orc.HGroup([orc.Label("R7"), orc.Field(size=10)])
-		self.r8= orc.HGroup([orc.Label("R8"), orc.Field(size=10)])
-		self.r9= orc.HGroup([orc.Label("R9"), orc.Field(size=10)])
-		self.r10= orc.HGroup([orc.Label("R10"), orc.Field(size=10)])
-		self.r12= orc.HGroup([orc.Label("R12"), orc.Field(size=10)])
-		self.r11= orc.HGroup([orc.Label("R11"), orc.Field(size=10)])
-		self.r13= orc.HGroup([orc.Label("R13"), orc.Field(size=10)])
-		self.r14= orc.HGroup([orc.Label("R14"), orc.Field(size=10)])
-		self.r15= orc.HGroup([orc.Label("R15"), orc.Field(size=10)]) 
 
+		#------------------create field--------------------------
+		self.fieldRegistre=[orc.Field(size=10) for _ in range(17)]
+		
+		self.fieldR0= orc.Field(size=10)
+		
+		#-------------------initialize register------------------
+		self.r0= orc.HGroup([orc.Label("R0"), self.fieldRegistre[0]])
+		self.r1= orc.HGroup([orc.Label("R1"), self.fieldRegistre[1]])
+		self.r2= orc.HGroup([orc.Label("R2"), self.fieldRegistre[2]])
+		self.r3= orc.HGroup([orc.Label("R3"), self.fieldRegistre[3]])
+		self.r4= orc.HGroup([orc.Label("R4"), self.fieldRegistre[4]])
+		self.r5= orc.HGroup([orc.Label("R5"), self.fieldRegistre[5]])
+		self.r6= orc.HGroup([orc.Label("R6"), self.fieldRegistre[6]])
+		self.r7= orc.HGroup([orc.Label("R7"), self.fieldRegistre[7]])
+		self.r8= orc.HGroup([orc.Label("R8"), self.fieldRegistre[8]])
+		self.r9= orc.HGroup([orc.Label("R9"), self.fieldRegistre[9]])
+		self.r10= orc.HGroup([orc.Label("R10"), self.fieldRegistre[10]])
+		self.r12= orc.HGroup([orc.Label("R12"), self.fieldRegistre[11]])
+		self.r11= orc.HGroup([orc.Label("R11"), self.fieldRegistre[12]])
+		self.r13= orc.HGroup([orc.Label("R13"), self.fieldRegistre[13]])
+		self.r14= orc.HGroup([orc.Label("R14"), self.fieldRegistre[14]])
+		self.r15= orc.HGroup([orc.Label("R15"), self.fieldRegistre[15]])
+		self.cpsr= orc.HGroup([orc.Label("CPSR"), self.fieldRegistre[16]]) 
+
+		self.listregister=[self.r0,self.r1, self.r2,self.r3,self.r4,self.r5, self.r6
+					 ,self.r7,self.r8,self.r9,self.r10,self.r11,self.r12,self.r13,self.r14,self.r15,self.cpsr]
 		#----------------------------------------------------------#
 		#----------------------------------------------------------#
 		
@@ -586,7 +636,7 @@ class Session(orc.Session):
 		#------------------register layer---------------------------
 		self.registre=orc.LayeredPane([orc.VGroup([self.resetButton,self.r0,self.r1, self.r2, self.r3,
                                            self.r4, self.r5, self.r6, self.r7, self.r8, self.r9,
-                                           self.r10, self.r11, self.r12, self.r13, self.r14, self.r15])])
+                                           self.r10, self.r11, self.r12, self.r13, self.r14, self.r15,self.cpsr])])
 		self.registre.weight=0.10
 
 	
@@ -660,7 +710,7 @@ class Session(orc.Session):
 		self.connectButton= orc.Button("connect", on_click=self.login)
 		self.buttonCancel= orc.Button("cancel", on_click=self.eventCancelButton)
 		self.createDialog()
-		
+		self.initRegister()
 		return self.page
 		
 		

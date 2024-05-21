@@ -41,10 +41,11 @@ class Simulator(bass.Simulator):
 			raise Bass.Exception("cannot load %s" % path)
 		arm.loader_load(self.loader, self.pf);
 		self.start = arm.loader_start(self.loader)
-
+		
+		print("start = ", self.get_label("_start"))
 		# prepare the simulator
 		self.state = arm.new_state(self.pf)
-		self.sim = arm.new_sim(self.state, self.start, 0)
+		self.sim = arm.new_sim(self.state, self.start, self.get_label("_start"))
 
 	def release(self):
 		if self.sim != None:
@@ -53,7 +54,7 @@ class Simulator(bass.Simulator):
 			arm.loader_close(self.loader)
 
 	def get_label(self, name):
-		if labels == None:
+		if self.labels == None:
 			self.labels = {}
 			for i in range(0, arm.loader_count_syms(self.loader)):
 				sym = arm.loader_sym(self.loader, i)
@@ -65,8 +66,36 @@ class Simulator(bass.Simulator):
 
 	def set_break(self, addr):
 		self.breaks.append(addr)
+	
+	def getNbSyms(self):
+		return arm.loader_count_syms(self.loader)
+	
+	def getRegisterBank(self,i):
+		return arm.get_register_bank(i)
+	
+	def getRegister(self,i,j):
+		return arm.get_register(self.state, i, j)
+	
+	def stepInto(self):
+		inst= arm.next_inst(self.sim)
+		print("instruction :", inst)
+		disasm=arm.disasm(inst)
+		print("retour dessassemblage")
+		arm.free_inst(inst)
+		arm.step(self.sim)
+		return disasm
+
+	def getNbRegisterBank(self):
+		return arm.count_register_banks()
+	
+	def nextInstruction(self):
+		return arm.next_addr(self.sim)
+	
 
 
 def load(path):
 	return Simulator(path)
+
+
 	
+
