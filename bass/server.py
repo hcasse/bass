@@ -363,6 +363,17 @@ class Session(orc.Session):
 		"""
 		self.make_dialogError(texte)
 		self.dialogError.show()
+
+	def eventRenameFile(self):
+		"""
+		"""
+		pass
+
+	def eventRenameProject(self):
+		"""
+		"""
+		pass
+
 	#----------------------------------------------------#
 	def eventCancelError(self):
 		"""
@@ -370,6 +381,11 @@ class Session(orc.Session):
 		"""
 		self.dialogError.hide()
 
+	def cancelRenameFile(self):
+		self.dialogRenameFile.hide()
+
+	def cancelRenameProject(self):
+		self.dialogRenameProject.hide()
 
 	def eventCancelButton(self):
 		self.dialogConnexion.hide()
@@ -440,6 +456,22 @@ class Session(orc.Session):
 		self.layeredError = orc.LayeredPane([orc.VGroup([self.msgError, orc.Spring(hexpand=True), orc.Button("Ok", on_click=self.eventCancelError)])])
 		self.layeredError.weight = 10
 
+	def layeredRenameFichier(self, filename = ""):
+		"""
+		"""
+		self.fieldFileName = orc.Field(size=20, init=filename)
+		self.layeredRenameFile = orc.LayeredPane([ orc.VGroup([ orc.HGroup([orc.Label("Entrez le nouveau nom du fichier : ")]), orc.HGroup([orc.Spring(hexpand=True), self.fieldFileName]), orc.Spring(vexpand=True),
+																orc.HGroup([orc.Button("Annuler", on_click = self.cancelRenameFile), orc.Spring(hexpand=True), orc.Button("Valider", on_click= self.renameFichier)]) ])])
+		self.layeredRenameFile.weight = 10
+
+	def layeredRenameProject(self, projectname = ""):
+		"""
+		"""
+		self.fieldProjectName = orc.Field(size=20, init=projectname)
+		self.layeredRenameProjet = orc.LayeredPane([ orc.VGroup([ orc.HGroup([orc.Label("Entrez le nouveau nom du projet : ")]), self.fieldProjectName, orc.Spring(vexpand=True),
+																orc.HGroup([orc.Button("Annuler", on_click = self.cancelRenameFile), orc.Spring(hexpand=True), orc.Button("Valider", on_click= self.renameProjet)]) ])])
+		self.layeredRenameProjet.weight = 10
+
 
 	def updateFieldRegister(self):
 		"""
@@ -480,6 +512,8 @@ class Session(orc.Session):
 		self.make_dialogError()
 		self.make_dialogNewaccount()
 		self.make_dialogforgotPassword()
+		self.make_dialogRenameProjet()
+		self.make_dialogRenameFichier()
 
 
 	def make_dialogError(self, texte=""):
@@ -490,6 +524,18 @@ class Session(orc.Session):
 		"""
 		self.layeredErroR(texte)
 		self.dialogError = dialog.Base(self.page, self.layeredError)
+
+	def make_dialogRenameFichier(self, texte=""):
+		"""
+		"""
+		self.layeredRenameFichier(texte)
+		self.dialogRenameFile = dialog.Base(self.page, self.layeredRenameFile)
+
+	def make_dialogRenameProjet(self, texte=""):
+		"""
+		"""
+		self.layeredRenameProject(texte)
+		self.dialogRenameProject = dialog.Base(self.page, self.layeredRenameProjet)
 
 	def make_dialog(self):
 		self.layeredconnexionDialog()
@@ -508,11 +554,15 @@ class Session(orc.Session):
 
 	#--------------fonction sur les tab editeur et disassembly---------------
 	def add(self):
+		"""
+		"""
 		self.tabEditeurDisassembly.insert(MyTabEditor("new %d" % self.num, self.editor))
 		self.num = self.num + 1
 		self.cnt = self.cnt + 1
 
 	def remove(self):
+		"""
+		"""
 		self.cnt = self.cnt - 1
 		self.tabEditeurDisassembly.remove( self.tabEditeurDisassembly.current )
 		self.tabEditeurDisassembly.current = -1
@@ -527,12 +577,26 @@ class Session(orc.Session):
 			self.first()
 
 	def first(self):
+		"""
+		"""
 		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.get_tab(0))
 
-	def rename(self):
+	def renameFile(self):
+		"""
+		"""
+		self.currentFint = self.tabEditeurDisassembly.current
+		self.currentFile = self.user.projects[self.currentProject][self.currentFint-1]
+		pass
+
+	def renameFichier(self):
+		pass
+		
+	def renameProjet(self):
 		pass
 
 	def loadProjectsGroup(self):
+		"""
+		"""
 		for i in range(len(self.projectsGroup.get_children())-2):
 			self.projectsGroup.remove(len(self.projectsGroup.get_children())-(i+1))
 		for i in range(len(self.user.projects)):
@@ -540,10 +604,15 @@ class Session(orc.Session):
 			self.projectsGroup.insert(orc.HGroup([but]))
 
 	def makeButtonLambdaProject(self, project):
+		"""
+		"""
 		return orc.Button(project.name, on_click=lambda: self.loadProjectFilesEditor(project))
 		
 
 	def loadProjectFilesEditor(self, projet):
+		"""
+		"""
+		self.currentProject = projet
 		self.project_label.set_content(projet.name)
 		for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
 			self.tabEditeurDisassembly.remove(1)
@@ -551,7 +620,6 @@ class Session(orc.Session):
 			if ( (".s" in f.name) and not(".elf" in f.name) ):
 				t = MyTabEditor(f.name, orc.Editor(init = f.load()))
 				self.tabEditeurDisassembly.insert(t)
-		
 		self.tabEditeurDisassembly.current = -1
 		self.tabEditeurDisassembly.panes.current = -1
 		self.tabEditeurDisassembly.labs.current = -1
@@ -739,6 +807,8 @@ class Session(orc.Session):
 						pass
 					else :
 						self.loadProjectsGroup()
+						self.loadProjectFilesEditor(self.user.projects[0])
+						"""
 						self.project_label.set_content(self.user.projects[0].name)
 						for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
 							self.tabEditeurDisassembly.remove(1)
@@ -746,6 +816,7 @@ class Session(orc.Session):
 							if ( (".s" in f.name) and not(".elf" in f.name) ):
 								t = MyTabEditor(f.name, orc.Editor(init = f.load()))
 								self.tabEditeurDisassembly.insert(t)
+						"""
 					self.connected()
 				else:
 					text = "Le mot de passe est errone"
