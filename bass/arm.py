@@ -1,7 +1,6 @@
 """ARM configuration for bass."""
 
 import os.path
-
 import bass
 import armgliss as arm
 
@@ -80,10 +79,13 @@ class Simulator(bass.Simulator):
 		inst= arm.next_inst(self.sim)
 		print("instruction :", inst)
 		disasm=arm.disasm(inst)
+		adrInst=arm.get_inst_addr(inst)
 		print("retour dessassemblage")
 		arm.free_inst(inst)
 		arm.step(self.sim)
-		return disasm
+		retour=str(hex(adrInst))
+		retour+="	==>	"+disasm
+		return retour
 
 	def getNbRegisterBank(self):
 		return arm.count_register_banks()
@@ -91,11 +93,31 @@ class Simulator(bass.Simulator):
 	def nextInstruction(self):
 		return arm.next_addr(self.sim)
 	
+	def setRegister(self,ri,registre,value):
+		arm.set_register(self.state,ri, registre, value)
+	
+	def getMemory(self):
+		mem= arm.get_memory(self.pf,0)
+		
+	def getRegisterBanks(self):
+		R = None
+		Ri = None
+		for i in range(0, arm.count_register_banks()):
+			bank = arm.get_register_bank(i)
+			if bank[0] == 'R':
+				R = bank
+				Ri = i
+		return Ri
+	
+	def getStateMemory(self):
+		return arm.get_state_memory(self.state)
+	
+	def getState(self):
+		return self.state
+	
 
 
 def load(path):
 	return Simulator(path)
 
-
-	
 

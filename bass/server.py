@@ -230,6 +230,7 @@ class Session(orc.Session):
 				self.sim = config.load(exec_path)
 				self.enable_sim(True)
 				self.console.append(orc.text(orc.INFO, "Start simulation."))
+				self.consoleDis.clear()
 			except bass.Exception as e:
 				self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
 
@@ -248,15 +249,15 @@ class Session(orc.Session):
 
 	def step(self):
 		#print("Simulateur ",self.sim)
-		disasm=self.sim.stepInto()
-		self.consoleDis.append(disasm)
+		retour=self.sim.stepInto()
+		self.consoleDis.append(retour)
 		self.updateFieldRegister()
 
 	def step_over(self):
 		while self.sim.nextInstruction()!=self.sim.get_label("_exit"):
 			self.step()
+		self.step()
 		self.stop_sim()
-		print(self.sim.get_label("_exit"))
 
 	def run_to(self):
 		pass
@@ -403,6 +404,10 @@ class Session(orc.Session):
 	def eventButtonCreateAccount(self):
 		self.dialogConnexion.hide()
 		self.dialognewAccount.hide()
+
+	def eventDisconnect(self):
+		self.dialogDeconnexion.hide()
+
 	#----------------menu button--------------------
 	def make_menu(self):
 		return popup.MenuButton(
@@ -416,10 +421,10 @@ class Session(orc.Session):
 	#---------------------connexion case------------------------#
 	#----------------LayeredPAne connexion-------------------#
 	def layeredconnexionDialog(self):
-		self.fieldEmail= orc.EmailField(size=20)
-		self.fieldMdp= orc.PasswordField(size=20)
-		self.username= orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),self.fieldEmail, self.connectButton])
-		self.mdp= orc.HGroup([orc.Label("Password"), orc.Spring(hexpand=True),self.fieldMdp])
+		self.fieldEmail= orc.EmailField(label="Email", size=20)
+		self.fieldMdp= orc.PasswordField(label="Password",size=20)
+		self.username= orc.HGroup([self.fieldEmail, self.connectButton])
+		self.mdp= orc.HGroup([self.fieldMdp])
 
 		self.buttonNewAccount= orc.Button("New Account", on_click= self.eventCreateAccount)
 		self.lcreercompte= orc.HGroup([orc.Label("Don't have an account"),orc.Spring(hexpand=True), self.buttonNewAccount])
@@ -427,23 +432,24 @@ class Session(orc.Session):
 		self.lforgotpassword=orc.HGroup([orc.Label("Retrieve"), orc.Spring(hexpand=True),self.buttonforgotPassword])
 		self.layeredConnexion= orc.LayeredPane([orc.VGroup([self.username, self.mdp,orc.Spring(vexpand=True), self.lcreercompte ,orc.Spring(vexpand=True), self.lforgotpassword, self.buttonCancel])])
 		self.layeredConnexion.weight=10
-	
+
+	def layeredDeconnexionDialog(self):
+		self.layeredDeconnexion= orc.LayeredPane([orc.Button("Disconnect", on_click= self.eventDisconnect)])
+		self.layeredDeconnexion.weight=10
+
 	def layeredCreateAcountDialog(self):
 		self.fieldNom= orc.Field(size=20)
-		self.fieldnewUSername= orc.EmailField(size=20)
-		self.fieldnewMdp= orc.PasswordField(size=20)
+		self.fieldnewUSername= orc.EmailField(label="Email",size=20)
+		self.fieldnewMdp= orc.PasswordField(label="Password",size=20)
 		self.buttonCreate= orc.Button("create", on_click= self.eventButtonCreateAccount)
 		self.groupUtilaccount= orc.HGroup([self.buttonCreate, orc.Spring(hexpand=True), self.buttonCancel])
-		self.newusername= orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),self.fieldEmail])
-		self.newmdp= orc.HGroup([orc.Label("Password"), orc.Spring(hexpand=True),self.fieldMdp])
 		self.newNom= orc.HGroup([orc.Label("Username"), orc.Spring(hexpand=True),self.fieldNom])
-		self.newlayeredConnexion= orc.LayeredPane([orc.VGroup([self.newusername, self.newNom,self.newmdp,orc.Spring(vexpand=True), self.groupUtilaccount])])
+		self.newlayeredConnexion= orc.LayeredPane([orc.VGroup([self.fieldnewUSername, self.newNom,self.fieldnewMdp,orc.Spring(vexpand=True), self.groupUtilaccount])])
 		self.newlayeredConnexion.weight=10
 
 	def layeredforgotPassword(self):
-		self.fieldRetrieveAccount= orc.EmailField(size=20)
-		self.layeredRetrieve= orc.LayeredPane([orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),
-													 self.fieldRetrieveAccount, orc.Button("Submit", on_click=self.submitEvent),
+		self.fieldRetrieveAccount= orc.EmailField(label="Email",size=20)
+		self.layeredRetrieve= orc.LayeredPane([orc.HGroup([self.fieldRetrieveAccount, orc.Button("Submit", on_click=self.submitEvent),
 													 orc.Button("cancel",on_click=self.eventCancelButton)])])
 
 	def layeredErroR(self, texte):
@@ -477,43 +483,51 @@ class Session(orc.Session):
 		"""
 			Update the register of the interface.
 		"""
-		R = None
-		Ri = None
+		self.R = None
+		self.Ri = None
 		registerBanks=self.sim.getNbRegisterBank()
 		print("NB banque de registre = ",registerBanks)
 		for i in range(0, registerBanks):
 			bank = self.sim.getRegisterBank(i)
 			if bank[0] == 'R':
-				R = bank
-				Ri = i
+				self.R = bank
+				self.Ri = i
 			if bank[2] == 1:
-				self.fieldRegistre[16].set_value(self.sim.getRegister(i, 0))
+				self.fieldRegistre[16].set_value(hex(self.sim.getRegister(i, 0)))
 			for j in range(0, bank[2]):
-					#print(self.sim.getRegister(i,j))
-					self.fieldRegistre[j].set_value(self.sim.getRegister(i, j))
+					self.fieldRegistre[j].set_value(hex(self.sim.getRegister(i, j)))
 		
 	def updateRegisterFromField(self):
 		"""
-		Update register value from field.
+			Update register value from field.
 		"""
-		pass
+		Ritemp= self.sim.getRegisterBanks()
+		for i in range(13):
+			self.sim.setRegister(Ritemp,i,self.fieldRegistre[0].get_content())
+		
+
 
 	def initRegister(self):
 		"""
-			Initial value of the register.
+			Initialize the register to 0.
 		"""
-		for i in range(15):
+		for i in range(13):
 			self.fieldRegistre[i].set_value(hex(0))
 		
 
 	#---------------------dialog----------------------------#
 	def createDialog(self):
+		"""
+			Create all useful dialogs for initialization.
+		"""
+
 		self.make_dialog()
 		self.make_dialogError()
 		self.make_dialogNewaccount()
 		self.make_dialogforgotPassword()
 		self.make_dialogRenameProjet()
 		self.make_dialogRenameFichier()
+		self.make_dialogDeconnexion()
 
 
 	def make_dialogError(self, texte=""):
@@ -538,18 +552,37 @@ class Session(orc.Session):
 		self.dialogRenameProject = dialog.Base(self.page, self.layeredRenameProjet)
 
 	def make_dialog(self):
+		"""
+			Event handler to create the dialog (connection).
+		"""
 		self.layeredconnexionDialog()
 		self.dialogConnexion=dialog.Base(self.page, self.layeredConnexion)
 		
 	def make_dialogNewaccount(self):
+		"""
+			Event handler to create the dialog (new account).
+		"""
 		self.layeredCreateAcountDialog()
 		self.dialognewAccount= dialog.Base(self.page, self.newlayeredConnexion)
 	
 	def make_dialogforgotPassword(self):
+		"""
+			Event handler to create the dialog (forgotPassword).
+		"""
 		self.layeredforgotPassword()
 		self.dialogforgotPassword=dialog.Base(self.page, self.layeredRetrieve)
+
+	def make_dialogDeconnexion(self):
+		"""
+			Event handler to create the dialog (deconnexion).
+		"""
+		self.layeredDeconnexionDialog()
+		self.dialogDeconnexion= dialog.Base(self.page,self.layeredDeconnexion)
 	
 	def connected(self):
+		"""
+			Event handler to close the dialog (connetion).
+		"""
 		self.dialogConnexion.hide()
 
 	#--------------fonction sur les tab editeur et disassembly---------------
@@ -667,7 +700,11 @@ class Session(orc.Session):
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
 
 		#------------------create field--------------------------
-		self.fieldRegistre=[orc.Field(size=10) for _ in range(17)]
+		self.fieldRegistre=[orc.Field(size=10) for _ in range(13)]
+		
+		#--------------create read-only register-----------------
+		for i in range(4):
+			self.fieldRegistre.append(orc.Field(size=10,read_only=True))
 		
 		self.fieldR0= orc.Field(size=10)
 		
@@ -683,13 +720,14 @@ class Session(orc.Session):
 		self.r8= orc.HGroup([orc.Label("R8"), self.fieldRegistre[8]])
 		self.r9= orc.HGroup([orc.Label("R9"), self.fieldRegistre[9]])
 		self.r10= orc.HGroup([orc.Label("R10"), self.fieldRegistre[10]])
-		self.r12= orc.HGroup([orc.Label("R12"), self.fieldRegistre[11]])
-		self.r11= orc.HGroup([orc.Label("R11"), self.fieldRegistre[12]])
-		self.r13= orc.HGroup([orc.Label("R13"), self.fieldRegistre[13]])
-		self.r14= orc.HGroup([orc.Label("R14"), self.fieldRegistre[14]])
-		self.r15= orc.HGroup([orc.Label("R15"), self.fieldRegistre[15]])
+		self.r11= orc.HGroup([orc.Label("R11"), self.fieldRegistre[11]])
+		self.r12= orc.HGroup([orc.Label("R12"), self.fieldRegistre[12]])
+		self.r13= orc.HGroup([orc.Label("sp"), self.fieldRegistre[13]])
+		self.r14= orc.HGroup([orc.Label("lr"), self.fieldRegistre[14]])
+		self.r15= orc.HGroup([orc.Label("pc"), self.fieldRegistre[15]])
 		self.cpsr= orc.HGroup([orc.Label("CPSR"), self.fieldRegistre[16]]) 
 
+		#--------------liste des registres---------------------
 		self.listregister=[self.r0,self.r1, self.r2,self.r3,self.r4,self.r5, self.r6
 					 ,self.r7,self.r8,self.r9,self.r10,self.r11,self.r12,self.r13,self.r14,self.r15,self.cpsr]
 		#----------------------------------------------------------#
