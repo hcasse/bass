@@ -12,6 +12,7 @@ import subprocess
 from Orchid.orchid import popup
 from Orchid.orchid import dialog
 import pandas as pd
+import bass.utilDisassembly as util
 
 LINE_RE = re.compile("^([^\.]+\.[^:]:[0-9]+:).*$")
 
@@ -231,6 +232,7 @@ class Session(orc.Session):
 				self.enable_sim(True)
 				self.console.append(orc.text(orc.INFO, "Start simulation."))
 				self.consoleDis.clear()
+				self.print_Disassembly()
 			except bass.Exception as e:
 				self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
 
@@ -250,7 +252,6 @@ class Session(orc.Session):
 	def step(self):
 		#print("Simulateur ",self.sim)
 		retour=self.sim.stepInto()
-		self.consoleDis.append(retour)
 		self.updateFieldRegister()
 
 	def step_over(self):
@@ -320,6 +321,25 @@ class Session(orc.Session):
 	def enable_run(self, enabled = True):
 		self.enable_sim(not enabled)
 		self.set_enabled(enabled)
+
+	def print_Disassembly(self):
+		"""
+			Display of disassembly console.
+		"""
+		exec_path = os.path.join(self.project.get_path(), self.project.get_exec_name())
+		nameFile=os.path.join(self.project.get_path(),"disassembly.txt")
+		util.createDiassembly(exec_path, nameFile, self.project.get_path())
+
+		with open(nameFile, 'r') as f:
+			lignes = f.readlines()
+
+		for ligne in lignes:
+			self.consoleDis.append(ligne)
+		
+
+
+    
+
 
 	def help(self):
 		pass
