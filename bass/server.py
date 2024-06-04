@@ -232,7 +232,9 @@ class Session(orc.Session):
 				self.enable_sim(True)
 				self.console.append(orc.text(orc.INFO, "Start simulation."))
 				self.consoleDis.clear()
+				self.consoleMemory.clear()
 				self.print_Disassembly()
+				#self.print_Memory()
 			except bass.Exception as e:
 				self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
 
@@ -337,8 +339,16 @@ class Session(orc.Session):
 			self.consoleDis.append(ligne)
 		
 
+	def print_Memory(self):
+		exec_path = os.path.join(self.project.get_path(), self.project.get_exec_name())
+		nameFile=os.path.join(self.project.get_path(),"memory.txt")
+		util.createMemory(exec_path,nameFile,self.project.get_path())
 
-    
+		with open(nameFile, 'r') as f:
+			lignes = f.readlines()
+
+		for ligne in lignes:
+			self.consoleMemory.append(ligne)
 
 
 	def help(self):
@@ -771,7 +781,7 @@ class Session(orc.Session):
 		self.cnt = 2
 
 		self.consoleDis=orc.Console(init="Disassembly")
-
+		
 		self.tabEditeurDisassembly = orc.TabbedPane([
 			MyTabConsole("Disassembly", self.consoleDis),
 			MyTabEditor("main.s", self.editor)
@@ -780,6 +790,7 @@ class Session(orc.Session):
 
 		#--------------------------Panel de gauche-----------------------------#
 		self.consoleMemory= orc.Console(init="")
+
 		hlist = []
 		for i in range(len(self.user.projects)):
 			but = self.makeButtonLambdaProject(self.user.projects[i])
