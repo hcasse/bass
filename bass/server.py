@@ -650,6 +650,7 @@ class Session(orc.Session):
 	def event_accountCreated(self):
 		self.dialog_connexion.hide()
 		self.dialognewAccount.hide()
+		self.sigin()
 
 	def layeredCreateAcountDialog(self):
 		self.fieldNom= orc.Field(size=20)
