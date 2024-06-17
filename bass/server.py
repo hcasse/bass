@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
+import configparser
+from datetime import datetime
 import os
 import os.path
 import re
@@ -15,6 +17,7 @@ from Orchid.orchid import dialog
 import pandas as pd
 import bass.utilDisassembly as util
 
+from bass.login import *
 
 LINE_RE = re.compile("^([^\.]+\.[^:]:[0-9]+:).*$")
 
@@ -25,56 +28,25 @@ class File:
 		self.name = name
 
 	def get_path(self):
+		"""Ge the path of the file."""
 		return os.path.join(self.project.get_path(), self.name)
 
-	def saveEditeur(self, editor, text):
-		"""
-			Fonction permettant de sauvegarder dans le repertoire le fichier et son contenu. 
-
-			  @param text : Le contenu du fichier.
-		"""
-		self.save(text)
-		self.project.user.session.loadProjectFilesEditor(self.project.user.session.intPCourant)
-		self.project.user.session.tabEditeurDisassembly.select(self.project.user.session.intCourant)
-
 	def save(self, text):
-		"""
-			Fonction permettant de sauvegarder dans le repertoire le fichier et son contenu. 
-
-			  @param text : Le contenu du fichier.
-		"""
+		"""Save the file to the disk."""
 		path = self.get_path()
-		if not os.path.exists(path):
-			dir = os.path.dirname(path)
-			if not os.path.exists(dir):
-				os.makedirs(dir)
 		with open(path, "w", encoding="UTF8") as out:
 			out.write(text)
 
 	def load(self):
+		"""Load the file from the disk."""
 		path = self.get_path()
-		if not os.path.exists(path):
-			return config.INITIAL_SOURCE
-		else:
-			with open(path, "r", encoding="UTF8") as inp:
-				return inp.read()
-
-	def loadWithPath(self, path):
-		if not os.path.exists(path):
-			return config.INITIAL_SOURCE
-		else:
-			with open(path, "r", encoding="UTF8") as inp:
-				return inp.read()
+		with open(path, "r", encoding="UTF8") as inp:
+			return inp.read()
 
 	def delete(self):
-		"""
-			Fonction permettant de supprimer le fichier du répertoire.
-		"""
+		"""Delete a file."""
 		path = self.get_path()
-		if os.path.exists(path):
-			os.remove(path)
-			return True
-		return False
+		os.remove(path)
 
 	def rename(self, new_name, editeur, text):
 		"""
@@ -97,53 +69,74 @@ class File:
 			session.event_hideRenameFile()
 
 
-class Project:
-	def __init__(self, name = "no name"):
-		"""
-			Fonction permattant d'initialiser un objet Project
+class Template:
+	"""Represents a template."""
 
-			  @param name : Le nom du projet a initialiser (par defaut "no name").
-		"""
+	def __init__(self, app, name):
+		"""Build a template with given name."""
+		self.app = app
 		self.name = name
-		self.files = []
-		self.add_file(File())
+		self.description = ""
+		self.hide = []
+		self.exec = "main.elf"
+		self.sources = ["main.s"]
+		self.arch = "arm"
+		self.path = os.path.join(app.get_template_dir(), self.name)
+
+	def load(self):
+		"""Load the template from its description file."""
+		path = os.path.join(self.path, "template.ini")
+		config = configparser.ConfigParser()
+		config.read(path)
+		self.description = config.get("template", "description", fallback="")
+		self.hide = config.get("template", "hide", fallback="").split(";")
+		self.exec = config.get("template", "exec", fallback="main.elf")
+		self.sources = config.get("template", "sources", fallback="main.s").split(";")
+		self.arch = config.get("template", "arch", fallback="arm")
+
+
+class Project:
+	"""The project of a user."""
+
+	def __init__(self, name):
+		self.name = name
+		self.files = None
 		self.exec_path = None
 
 	def get_path(self):
+		"""Get the path to the directory of the project."""
 		return os.path.join(self.user.get_path(), self.name)
 
 	def get_exec_name(self):
+		"""Get the name of the executable of the project."""
 		if self.exec_path == None:
 			(name, ext) = os.path.splitext(self.files[0].name)
 			self.exec_path = "%s.%s" % (name, config.EXEC_EXT)
 		return self.exec_path
 
 	def add_file(self, file):
-		"""
-			Fonction permettant d'ajouter un objet File a un objet Project.
-
-			  @param file : L'objet File a ajouter a l'objet Project.
-		"""
-		file.project = self
+		"""Add a file to a project."""
+		if self.files is None:
+			self.load_project()
 		self.files.append(file)
-		
-	def load_project(self, path):
-		"""
-			Fonction permettant d'actualiser un objet Project a partir de l'adresse du repertoire systeme.
 
-			  @param path : L'adresse du repertoire systeme ou est stocke le projet et ses fichiers.
-		"""
+	def get_files(self):
+		"""Get the files of the project."""
+		if self.files is None:
+			self.load_project()
+		return self.files
+
+	def load_project(self):
+		"""Load the content of a project."""
 		self.files = []
-		for f in os.listdir(path):
+		for f in os.listdir(self.get_path()):
 			if ( (".s" in f) and not(".elf" in f) ):
 				if os.path.isfile( os.path.join(path, f) ):
 					file = File(name = f)
 					self.add_file(file)
 
 	def delete_project(self):
-		"""
-			Fonction permettant de supprimer le répertoire du projet et tous les fichiers qu'il contient.
-		"""
+		"""Remove a project."""
 		path = self.get_path()
 		if os.path.exists(path):
 			shutil.rmtree(path)
@@ -151,103 +144,56 @@ class Project:
 		return False
 
 	def rename_project(self, new_name):
-		"""
-		Fonction permettant de renommer un projet.
-
-		  @param new_name : Le nouveau nom du projet.
-		"""
-		if not os.path.exists(self.get_path()):
-			#raise FileNotFoundError(f"Le répertoire du projet {self.name} n'existe pas.")
-			return "Le répertoire du projet "+self.name+" n'a pas été trouvé."
-		if os.path.exists(os.path.join(self.user.get_path(), new_name)):
-			#raise FileExistsError(f"Un projet avec le nom {new_name} existe déjà.")
-			return "Impossible de nommer le fichier "+new_name+". Ce projet contient déjà un fichier avec ce nom."
+		"""Rename a project."""
 		os.rename(self.get_path(), os.path.join(self.user.get_path(), new_name))
 		self.name = new_name
-		return 0
-
 
 
 class User:
-	def __init__(self, name = "anonymous"):
-		"""
-			Fonction permettant d'initialiser un objet User.
+	"""A user."""
 
-			  @param name : Le nom de l'utilisateur (par defaut "anonymous").
-		"""
-		self.id = -1
-		self.name = name
+	def __init__(self, app, user, path, email=None):
+		self.app = app
+		self.user = user
+		self.path = path
+		self.email = email
 		self.projects = []
-		self.add_project(Project())
 
 	def get_path(self):
-		"""
-			Fonction permettant d'obtenir l'adresse du repertoir systeme de l'utilisateur.
-		"""
-		return os.path.join(config.DATADIR, str(self.id))
+		"""Get the directory of the user."""
+		return self.path
+
+	def get_account_path(self):
+		return os.path.join(self.path, "account.ini")
 
 	def add_project(self, project):
-		"""
-			Fonction permettant d'ajouter un objet Projet a un objet User
-
-			  @param project : Le projet a ajouter a l'objet User.
-		"""
+		""""Add a project to the user."""
 		project.user = self
 		self.projects.append(project)
 
 	def remove_project(self, project):
-		"""
-		Fonction permettant de supprimer un projet de la liste des projets de l'utilisateur et de supprimer son répertoire.
-
-		  @param project : Le projet à supprimer de l'objet User.
-		"""
+		"""Remove a project from the user."""
 		if project in self.projects:
 			self.projects.remove(project)
 			project.delete_project()
 
-	def load_user(self, idUser):
-		"""
-			Fonction permettant de se connecter a un compte utilisateur.
+	def load(self):
+		"""Load data from the user."""
+		config = configparser.ConfigParser()
+		config.read(self.get_account_path())
+		self.email = config.get("user", "email", fallback="")
+		for name in config.get("user", "projects").split(";"):
+			if name != "":
+				self.add_project(Project(name))
 
-			  @param idUser : L'identifiant systeme de l'utilisateur.
-
-			  @return L'objet User mit a jour avec les informations du compte utilisateur rattache a l'identifiant systeme idUser.
-		"""
-		df = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
-		line = df.loc[df['id']==idUser]
-		self.id = idUser
-		self.name = line.iloc[0, 1]
-		self.projects = []
-		for p in os.listdir(self.get_path()):
-			dirPath = os.path.join(self.get_path(), p)
-			if not os.path.isfile(dirPath):
-				project = Project(name = p)
-				project.load_project(path = dirPath)
-				project.user = self
-				self.projects.append(project)
-		return self
-				
-	def sigUser(self, name, email, password):
-		"""
-			Fonction permettant de creer un compte utilisateur a partir des informations necessaires.
-
-			  @param name : Le nom, ou pseudo, de l'utilisateur.
-			  @param email : L'email de l'utilisateur.
-			  @param password : Le mot de passe de l'utilisateur.
-
-			  @return Le resultat de la fonction load_user avec comme parametre le nouvel id de l'utilisateur.
-		"""
-		data = pd.read_csv( os.path.join(config.DATADIR,"account.txt") )
-		listID = set(data['id'])
-		newID = 1
-		while (newID in listID):
-			newID += 1
-		res = str(newID)+","+name+","+email+","+password+"\n"
-		with open(os.path.join(config.DATADIR,"account.txt"), "a", encoding="UTF8") as out:
-			out.write(res)
-		os.makedirs( os.path.join(config.DATADIR, str(newID)) )
-		return self.load_user(newID)
-
+	def save(self):
+		"""Save the user file."""
+		config = configparser.ConfigParser()
+		config['user'] = {}
+		config['user']['email'] = self.email
+		config['user']['projects'] = ";".join([p.name for p in self.projects])
+		with open(self.get_account_path(), "w") as out:
+			config.write(out)
 
 
 class MyTabEditor(orc.Tab):
@@ -297,14 +243,14 @@ class MyTabConsole(orc.Tab):
 class Session(orc.Session):
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
-		self.user = User()
-		self.user.session = self
-		self.project = self.user.projects[0]
+		self.user = None
+		#self.user.session = self
+		self.project = None
 
-		if self.project.files != []:
-			self.file = self.project.files[0]
-		else:
-			self.file = None
+		#if self.project.files != []:
+		#	self.file = self.project.files[0]
+		#else:
+		self.file = None
 		self.sim = None
 		self.perform_start = False
 
@@ -626,7 +572,7 @@ class Session(orc.Session):
 	def layeredconnexionDialog(self):
 		self.fieldEmail= orc.EmailField(size=20)
 		self.fieldMdp= orc.PasswordField(size=20)
-		self.connectButton= orc.Button("connect", on_click=self.login)
+		self.connectButton= orc.Button("connect", on_click=self.login_user)
 		self.username= orc.HGroup([orc.Label("Email"),orc.Spring(hexpand=True),self.fieldEmail, self.connectButton])
 		self.mdp= orc.HGroup([orc.Label("Password"), orc.Spring(hexpand=True),self.fieldMdp])
 
@@ -806,7 +752,7 @@ class Session(orc.Session):
 	def layeredSecurityRemoveFile(self):
 		self.fieldMdp = orc.PasswordField(size=20)
 		#self.fieldMdp.set_content(" ")
-		self.layeredSecurityRemoveFichier = orc.LayeredPane([orc.VGroup([orc.HGroup([orc.Label("Pour confirmer la suppression, "+self.user.name+" Veuillez entrer votre mot de passe : "), orc.Spring(hexpand=True)]), 
+		self.layeredSecurityRemoveFichier = orc.LayeredPane([orc.VGroup([orc.HGroup([orc.Label("Pour confirmer la suppression, "+" Veuillez entrer votre mot de passe : "), orc.Spring(hexpand=True)]),
 																		orc.HGroup([orc.Spring(hexpand=True), self.fieldMdp]), orc.Spring(vexpand=True), 
 																		orc.HGroup([orc.Button("Annuler", on_click=self.event_hideSecurityRemoveFile), orc.Spring(hexpand=True), orc.Button("Valider", on_click=self.removeFile)]) ])])
 		self.layeredSecurityRemoveFichier.weight = 10
@@ -886,7 +832,11 @@ class Session(orc.Session):
 	def layeredSecurityRemoveProject(self):
 		self.fieldMdp = orc.PasswordField(size=20)
 		#self.fieldMdp.set_content(" ")
-		self.layeredSecurityRemoveProjet = orc.LayeredPane([orc.VGroup([orc.HGroup([orc.Label("Pour confirmer la suppression, "+self.user.name+" Veuillez entrer votre mot de passe : "), orc.Spring(hexpand=True)]), 
+		self.layeredSecurityRemoveProjet = orc.LayeredPane([orc.VGroup([
+			orc.HGroup([
+				orc.Label("Pour confirmer la suppression, " + " Veuillez entrer votre mot de passe : "),
+			orc.Spring(hexpand=True)
+		]),
 																		orc.HGroup([orc.Spring(hexpand=True), self.fieldMdp]), orc.Spring(vexpand=True), 
 																		orc.HGroup([orc.Button("Annuler", on_click=self.event_hideSecurityRemoveProject), orc.Spring(hexpand=True), orc.Button("Valider", on_click=self.removeProject)]) ])])
 		self.layeredSecurityRemoveProjet.weight = 10
@@ -1215,46 +1165,6 @@ class Session(orc.Session):
 		if len(self.tabEditeurDisassembly.tabs) > 0 :
 			self.first()
 
-	def login(self):
-		"""
-			La fonction qui recupere dans la fenetre de dialogue les informations entrees par l'utilisateur, et permet de se connecter, tout en gerant les exceptions.
-		"""
-		email = self.fieldEmail.get_content()
-		mdp = self.fieldMdp.get_content()
-		if (',' in email or ',' in mdp):
-			text = "Le caractere special , est interdit."
-			self.event_error(text)
-		else:
-			data = pd.read_csv(os.path.join(config.DATADIR,"account.txt"))
-			data = data.loc[data['email'] == str(email)]
-			if (data.size == 0):
-				text = "L'Email n'est pas reconnu"
-				self.event_error(text)
-			else:
-				mdpCourant = data.iloc[0, 3]
-				idUser = data.iloc[0, 0]
-				if (mdpCourant == mdp):
-					self.user = self.user.load_user(idUser)
-					self.user_label.set_content(self.user.name)
-					if len(self.user.projects) == 0:
-						# Afficher la page invitant à créer un projet
-						pass
-					else :
-						self.loadProjectsGroup()
-						self.loadProjectFilesEditor(0)
-						"""
-						self.project_label.set_content(self.user.projects[0].name)
-						for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
-							self.tabEditeurDisassembly.remove(1)
-						for f in self.user.projects[0].files:
-							if ( (".s" in f.name) and not(".elf" in f.name) ):
-								t = MyTabEditor(f.name, orc.Editor(init = f.load()))
-								self.tabEditeurDisassembly.insert(t)
-						"""
-					self.event_connected()
-				else:
-					text = "Le mot de passe est errone"
-					self.event_error(text)
 
 	def sigin(self):
 		"""
@@ -1280,8 +1190,8 @@ class Session(orc.Session):
 
 	def get_index(self):
 
-		self.user_label = orc.Label(self.user.name)
-		self.project_label = orc.Label(self.project.name)
+		self.user_label = orc.Label("")
+		self.project_label = orc.Label("")
 
 		# prepare run actions
 		self.compile_action = orc.Button(orc.Icon("check"),
@@ -1376,14 +1286,15 @@ class Session(orc.Session):
 		hlist = []
 		hIntern = []
 		hIntern.append(orc.Spring(hexpand=True))
-		for i in range(len(self.user.projects)):
-			if (i%3 == 0 and i!=0):
-				hlist.append( orc.HGroup(hIntern) )
-				hIntern = []
+		if self.user is not None:
+			for i in range(len(self.user.projects)):
+				if (i%3 == 0 and i!=0):
+					hlist.append( orc.HGroup(hIntern) )
+					hIntern = []
+					hIntern.append(orc.Spring(hexpand=True))
+				but = self.makeButtonLambdaProject(i)
+				hIntern.append(but)
 				hIntern.append(orc.Spring(hexpand=True))
-			but = self.makeButtonLambdaProject(i)
-			hIntern.append(but)
-			hIntern.append(orc.Spring(hexpand=True))
 		hlist.append( orc.HGroup(hIntern) )
 		l = [orc.Spring(vexpand=True), orc.Spring(vexpand=True), orc.HGroup([orc.Label("Liste de vos Projets :"), orc.Spring(hexpand=True), orc.Button("Ajouter un nouveau projet", on_click=self.event_templateProject)]), orc.Spring(vexpand=True)]
 		l.extend(hlist)
@@ -1441,10 +1352,94 @@ class Session(orc.Session):
 		self.buttonCancel= orc.Button("cancel", on_click=self.event_full_hide_dialogs)
 		self.createDialog()
 		self.initRegister()
+
+		self.login_dialog = LoginDialog(self, self.page)
+		self.login_dialog.show()
+		self.register_dialog = None
+		self.select_dialog = None
+
 		return self.page
 		
 
-		
+	# Connecting functions
+
+	def login_user(self, console):
+		""" Try to log-in a user reacting to the login dialog."""
+		user = ~self.login_dialog.user
+		pwd = ~self.login_dialog.pwd
+		print("DEBUG:", user, pwd)
+		if not self.get_application().check_password(user, pwd):
+			self.login_dialog.error("Log-in error!")
+		else:
+			user_dir = os.path.join(self.get_application().get_data_dir(), user)
+			self.user = User(self.get_application, user, user_dir)
+			self.user.load()
+			self.user_label.set_content(user)
+			if len(self.user.projects) == 0:
+				# Afficher la page invitant à créer un projet
+				pass
+			else :
+				self.loadProjectsGroup()
+				self.loadProjectFilesEditor(0)
+				self.event_connected()
+			self.login_dialog.hide()
+			self.select_project()
+
+	def register_user(self, console):
+		self.login_dialog.hide()
+		if self.register_dialog is None:
+			self.register_dialog = RegisterDialog(self, self.page)
+		self.register_dialog.show()
+
+	def login_anon(self, console):
+		print("DEBUG: login anon!")
+		i = 0;
+		while True:
+			user = "anon-%d" % i
+			user_dir = os.path.join(self.get_application().get_data_dir(), user)
+			if not os.path.exists(user_dir):
+				break
+			print("DEBUG: exists", user_dir)
+			i += 1
+		try:
+			os.mkdir(user_dir)
+		except OSError as e:
+			self.login_dialog.error("cannot create directory!")
+			return
+		self.user = User(self.get_application(), user, user_dir)
+		self.login_dialog.hide()
+		self.select_project()
+
+	def retrieve_pwd(self, console):
+		pass
+
+	def cancel_user(self, console):
+		"""Registration cancelled."""
+		self.register_dialog.hide()
+		self.login_dialog.show()
+
+	def create_user(self, console):
+		"""Register a new user after dialog edition."""
+		user = ~self.register_dialog.user
+		if self.get_application().exists_user(user):
+			self.register_dialog.user.update_observers()
+			return
+		user_dir = os.path.join(self.get_application().get_data_dir(), user)
+		try:
+			os.mkdir(user_dir)
+		except OSError as e:
+			self.register_dialog.error("cannot create directory!")
+			return
+		self.user = User(self.get_application(), user, user_dir, email=~self.register_dialog.email)
+		self.user.save()
+		self.get_application().add_password(user, ~self.register_dialog.pwd)
+		self.register_dialog.hide()
+		self.select_project()
+
+	def select_project(self):
+		if self.select_dialog is None:
+			self.select_dialog = SelectDialog(self, self.page)
+		self.select_dialog.show()
 
 
 
@@ -1456,14 +1451,94 @@ class Application(orc.Application):
 			version="1.0.1",
 			description = "Machine level simulator.",
 			license = "GPL v3",
-			copyright = "Copyright (c) 2023, University of Toulosue 3",
+			copyright = "Copyright (c) 2023, University of Toulouse 3",
 			website="https://github.com/hcasse/bass"
-
 		)
+
+		self.data_dir = os.path.join(os.getcwd(), "data")
+		self.base_dir = os.path.dirname(__file__)
+
+		# load passwords
+		self.pwd_path = os.path.join(self.data_dir, "passwords.txt")
+		self.load_passwords()
+
+		# load templates
+		self.template_path = os.path.join(self.base_dir, "templates")
+		self.load_templates()
+
+	def log(self , msg):
+		"""Log a message."""
+		print("LOG: %s: %s\n" % (datetime.today(), msg))
+
+	def get_base_dir(self):
+		"""Get the directory containing code and assets."""
+		return self.root_dir
+
+	def get_data_dir(self):
+		"""Get the directory containing the data of the application."""
+		return self.data_dir
+
+	def get_template_dir(self):
+		"""Get the directory containing templates."""
+		return self.template_path
+
+	def save_passwords(self):
+		"""Save passwords."""
+		with open(self.pwd_path, "w") as out:
+			for (user, pwd) in self.passwords.items():
+				out.write("%s:%s\n" % (user, pwd))
+
+	def load_passwords(self):
+		"""Load passwords."""
+		self.passwords = {}
+		try:
+			with open(self.pwd_path) as input:
+				num = 0
+				for line in input.readlines():
+					num += 1
+					try:
+						i = line.index(':')
+					except ValueError:
+						self.log("bad formatted password line %s" % num)
+					user = line[:i]
+					pwd = line[i+1:].strip()
+					self.passwords[user] = pwd
+		except OSError as e:
+			self.log("cannot open password: %s" % e)
+
+	def check_password(self, user, pwd):
+		"""Check a password."""
+		try:
+			return self.passwords[user] == pwd
+		except KeyError:
+			return False
+
+	def add_password(self, user, pwd):
+		"""Add a new password."""
+		self.passwords[user] = pwd
+		self.save_passwords()
 
 	def new_session(self, man):
 		return Session(self, man)
 
+	def load_templates(self):
+		"""Load the templates."""
+		self.templates = {}
+		for name in os.listdir(self.template_path):
+			template = Template(self, name)
+			template.load()
+			self.templates[name] = template
+
+	def get_template(self, name):
+		"""Find the template with the given name or return None."""
+		try:
+			return self.templates[name]
+		except KeyError:
+			return None
+
+	def exists_user(self, user):
+		"""Test if a user exists."""
+		return user in self.passwords
 
 if __name__ == '__main__':
 	orc.run(Application(), debug=True)
