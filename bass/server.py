@@ -18,182 +18,12 @@ import pandas as pd
 import bass.utilDisassembly as util
 
 from bass.login import *
+from bass.data import *
 
 LINE_RE = re.compile("^([^\.]+\.[^:]:[0-9]+:).*$")
 
 
 
-class File:
-	def __init__(self, name = "main.s"):
-		self.name = name
-
-	def get_path(self):
-		"""Ge the path of the file."""
-		return os.path.join(self.project.get_path(), self.name)
-
-	def save(self, text):
-		"""Save the file to the disk."""
-		path = self.get_path()
-		with open(path, "w", encoding="UTF8") as out:
-			out.write(text)
-
-	def load(self):
-		"""Load the file from the disk."""
-		path = self.get_path()
-		with open(path, "r", encoding="UTF8") as inp:
-			return inp.read()
-
-	def delete(self):
-		"""Delete a file."""
-		path = self.get_path()
-		os.remove(path)
-
-	def rename(self, new_name, editeur, text):
-		"""
-			Fonction permettant de renommer un fichier.
-
-			  @param new_name : Le nouveau nom du fichier.
-			  @param text : Le contenu à sauvegarder dans le fichier renommé.
-		"""
-		if not os.path.exists(self.get_path):
-			self.project.user.session.event_error("Le fichier "+self.name+" n'a pas été trouvé.")
-		elif os.path.exists(os.path.join(self.project.get_path(), new_name)):
-			self.project.user.session.event_error("Impossible de nommer le fichier "+new_name+". Ce projet contient déjà un fichier avec ce nom.")
-		else:
-			self.delete()
-			self.name = new_name
-			self.save(text)
-			session = self.project.user.session
-			session.loadProjectFilesEditor()
-			session.tabEditeurDisassembly.select(self.currentFint)
-			session.event_hideRenameFile()
-
-
-class Template:
-	"""Represents a template."""
-
-	def __init__(self, app, name):
-		"""Build a template with given name."""
-		self.app = app
-		self.name = name
-		self.description = ""
-		self.hide = []
-		self.exec = "main.elf"
-		self.sources = ["main.s"]
-		self.arch = "arm"
-		self.path = os.path.join(app.get_template_dir(), self.name)
-
-	def load(self):
-		"""Load the template from its description file."""
-		path = os.path.join(self.path, "template.ini")
-		config = configparser.ConfigParser()
-		config.read(path)
-		self.description = config.get("template", "description", fallback="")
-		self.hide = config.get("template", "hide", fallback="").split(";")
-		self.exec = config.get("template", "exec", fallback="main.elf")
-		self.sources = config.get("template", "sources", fallback="main.s").split(";")
-		self.arch = config.get("template", "arch", fallback="arm")
-
-
-class Project:
-	"""The project of a user."""
-
-	def __init__(self, name):
-		self.name = name
-		self.files = None
-		self.exec_path = None
-
-	def get_path(self):
-		"""Get the path to the directory of the project."""
-		return os.path.join(self.user.get_path(), self.name)
-
-	def get_exec_name(self):
-		"""Get the name of the executable of the project."""
-		if self.exec_path == None:
-			(name, ext) = os.path.splitext(self.files[0].name)
-			self.exec_path = "%s.%s" % (name, config.EXEC_EXT)
-		return self.exec_path
-
-	def add_file(self, file):
-		"""Add a file to a project."""
-		if self.files is None:
-			self.load_project()
-		self.files.append(file)
-
-	def get_files(self):
-		"""Get the files of the project."""
-		if self.files is None:
-			self.load_project()
-		return self.files
-
-	def load_project(self):
-		"""Load the content of a project."""
-		self.files = []
-		for f in os.listdir(self.get_path()):
-			if ( (".s" in f) and not(".elf" in f) ):
-				if os.path.isfile( os.path.join(path, f) ):
-					file = File(name = f)
-					self.add_file(file)
-
-	def delete_project(self):
-		"""Remove a project."""
-		path = self.get_path()
-		if os.path.exists(path):
-			shutil.rmtree(path)
-			return True
-		return False
-
-	def rename_project(self, new_name):
-		"""Rename a project."""
-		os.rename(self.get_path(), os.path.join(self.user.get_path(), new_name))
-		self.name = new_name
-
-
-class User:
-	"""A user."""
-
-	def __init__(self, app, user, path, email=None):
-		self.app = app
-		self.user = user
-		self.path = path
-		self.email = email
-		self.projects = []
-
-	def get_path(self):
-		"""Get the directory of the user."""
-		return self.path
-
-	def get_account_path(self):
-		return os.path.join(self.path, "account.ini")
-
-	def add_project(self, project):
-		""""Add a project to the user."""
-		project.user = self
-		self.projects.append(project)
-
-	def remove_project(self, project):
-		"""Remove a project from the user."""
-		if project in self.projects:
-			self.projects.remove(project)
-			project.delete_project()
-
-	def load(self):
-		"""Load data from the user."""
-		config = configparser.ConfigParser()
-		config.read(self.get_account_path())
-		self.email = config.get("user", "email", fallback="")
-		for name in config.get("user", "projects").split(";"):
-			if name != "":
-				self.add_project(Project(name))
-
-	def save(self):
-		"""Save the user file."""
-		config = configparser.ConfigParser()
-		config['user'] = {}
-		config['user']['email'] = self.email
-		config['user']['projects'] = ";".join([p.name for p in self.projects])
-		with open(self.get_account_path(), "w") as out:
-			config.write(out)
 
 
 class MyTabEditor(orc.Tab):
@@ -253,6 +83,9 @@ class Session(orc.Session):
 		self.file = None
 		self.sim = None
 		self.perform_start = False
+
+	def get_user(self):
+		return self.user
 
 	def start_sim(self):
 		"""Start the simulation."""
@@ -860,7 +693,7 @@ class Session(orc.Session):
 			self.user.remove_project(self.user.projects[self.currentProject])
 			self.loadProjectsGroup()
 			# if (len(self.user.projects) > 0):
-			self.loadProjectFilesEditor(0)
+			self.loadProjectFilesEditor()
 			# else:
 				#Affichage du message invitant à créer un projet
 			self.event_hideSecurityRemoveProject()	
@@ -1143,17 +976,22 @@ class Session(orc.Session):
 			hIntern.append(orc.Spring(hexpand=True))
 		self.projectsGroup.insert( orc.HGroup(hIntern) )
 
-	def loadProjectFilesEditor(self, indiceProjet):
-		"""
-		"""
-		self.currentProject = indiceProjet
-		self.project_label.set_content(self.user.projects[indiceProjet].name)
+	def loadProjectFilesEditor(self):
+		"""Load the project in the file editor."""
+		self.project_label.set_content(self.project.name)
+
+		# remove old tabs
 		for _ in range(len(self.tabEditeurDisassembly.tabs)-1):
 			self.tabEditeurDisassembly.remove(1)
-		for f in self.user.projects[indiceProjet].files:
-			if ( (".s" in f.name) and not(".elf" in f.name) ):
-				t = MyTabEditor(f.name, orc.Editor(init = f.load()))
-				self.tabEditeurDisassembly.insert(t)
+
+		# build new tabs
+		print("DEBUG: building tabs")
+		for f in self.project.get_sources():
+			print("DEBUG: add tab", f.get_name())
+			t = MyTabEditor(f.name, orc.Editor(init = f.load()))
+			self.tabEditeurDisassembly.insert(t, 0)
+
+		# update remaining of window
 		self.tabEditeurDisassembly.current = -1
 		self.tabEditeurDisassembly.panes.current = -1
 		self.tabEditeurDisassembly.labs.current = -1
@@ -1164,7 +1002,6 @@ class Session(orc.Session):
 			self.tabEditeurDisassembly.select(i)
 		if len(self.tabEditeurDisassembly.tabs) > 0 :
 			self.first()
-
 
 	def sigin(self):
 		"""
@@ -1363,6 +1200,12 @@ class Session(orc.Session):
 
 	# Connecting functions
 
+	def setup_project(self, project):
+		"""Setup the current project."""
+		self.project = project
+		self.loadProjectsGroup()
+		self.loadProjectFilesEditor()
+
 	def login_user(self, console):
 		""" Try to log-in a user reacting to the login dialog."""
 		user = ~self.login_dialog.user
@@ -1375,13 +1218,6 @@ class Session(orc.Session):
 			self.user = User(self.get_application, user, user_dir)
 			self.user.load()
 			self.user_label.set_content(user)
-			if len(self.user.projects) == 0:
-				# Afficher la page invitant à créer un projet
-				pass
-			else :
-				self.loadProjectsGroup()
-				self.loadProjectFilesEditor(0)
-				self.event_connected()
 			self.login_dialog.hide()
 			self.select_project()
 
@@ -1392,23 +1228,20 @@ class Session(orc.Session):
 		self.register_dialog.show()
 
 	def login_anon(self, console):
-		print("DEBUG: login anon!")
 		i = 0;
 		while True:
 			user = "anon-%d" % i
 			user_dir = os.path.join(self.get_application().get_data_dir(), user)
 			if not os.path.exists(user_dir):
 				break
-			print("DEBUG: exists", user_dir)
 			i += 1
-		try:
-			os.mkdir(user_dir)
-		except OSError as e:
-			self.login_dialog.error("cannot create directory!")
-			return
 		self.user = User(self.get_application(), user, user_dir)
-		self.login_dialog.hide()
-		self.select_project()
+		try:
+			self.user.create()
+			self.login_dialog.hide()
+			self.select_project()
+		except DataException as e:
+			self.login_dialog.error(e)
 
 	def retrieve_pwd(self, console):
 		pass
@@ -1425,25 +1258,40 @@ class Session(orc.Session):
 			self.register_dialog.user.update_observers()
 			return
 		user_dir = os.path.join(self.get_application().get_data_dir(), user)
-		try:
-			os.mkdir(user_dir)
-		except OSError as e:
-			self.register_dialog.error("cannot create directory!")
-			return
 		self.user = User(self.get_application(), user, user_dir, email=~self.register_dialog.email)
-		self.user.save()
-		self.get_application().add_password(user, ~self.register_dialog.pwd)
-		self.register_dialog.hide()
-		self.select_project()
+		try:
+			self.user.create()
+			self.get_application().add_password(user, ~self.register_dialog.pwd)
+			self.register_dialog.hide()
+			self.select_project()
+		except DataException as e:
+			self.register_dialog.error(str(e))
 
 	def select_project(self):
+		"""Open the dialog to select a project or create a new one."""
 		if self.select_dialog is None:
 			self.select_dialog = SelectDialog(self, self.page)
 		self.select_dialog.show()
 
+	def create_project(self, interface):
+		"""Create a project after selection dialog."""
+		template = self.select_dialog.templates[self.select_dialog.selected_template[0]]
+		name = ~self.select_dialog.name
+		project = Project(self.user, name, template)
+		try:
+			project.create()
+			self.select_dialog.hide()
+			self.setup_project(project)
+		except DataException as e:
+			self.select_dialog.error(str(e))
+
+	def open_project(self, interface):
+		"""Open an existing project."""
+		pass
 
 
 class Application(orc.Application):
+	"""BASS Application"""
 	def __init__(self):
 		orc.Application.__init__(self,
 			name = "bass",
@@ -1535,6 +1383,10 @@ class Application(orc.Application):
 			return self.templates[name]
 		except KeyError:
 			return None
+
+	def get_templates(self):
+		"""Get the templates."""
+		return self.templates
 
 	def exists_user(self, user):
 		"""Test if a user exists."""

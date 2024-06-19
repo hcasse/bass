@@ -3,6 +3,8 @@
 from orchid import *
 from orchid.mind import *
 from orchid import dialog
+from orchid.models import ListVar
+from orchid.list import *
 
 class LoginDialog(dialog.Base):
 
@@ -84,4 +86,51 @@ class RegisterDialog(dialog.Base):
 class SelectDialog(dialog.Base):
 
 	def __init__(self, server, page):
-		dialog.Base.__init__(self, page, Label("select a project"), title="Project")
+		self.projects = ListVar(server.get_user().get_projects())
+		self.templates = ListVar(list(server.get_application().get_templates().values()))
+		self.selected_project = ListVar([])
+		self.selected_template = ListVar([])
+		self.name = Var("")
+		self.msg = MessageLabel("")
+
+		create_project = Action(
+				fun = server.create_project,
+				label = "Create",
+				enable =  not_null(self.selected_template) \
+						& if_error(not_null(self.name), "Name required!") \
+						& if_error(Predicate(fun=self.not_exists), "Project already exists!")
+			)
+		open_project = Action(
+				fun = server.open_project,
+				label = "Open",
+				enable = not_null(self.selected_project)
+			)
+
+		main = VGroup([
+			HGroup([
+				VGroup([
+					Label("Open project:"),
+					ListView(self.projects, selection=self.selected_project),
+					HGroup([hspring(), Button(open_project)])
+				]),
+				VGroup([
+					Label("Create project:"),
+					Field(self.name, place_holder="name"),
+					Label("Select template:"),
+					ListView(self.templates, selection=self.selected_template),
+					HGroup([hspring(), Button(create_project)])
+				])
+			]),
+			self.msg
+		])
+
+		dialog.Base.__init__(self, page, main, title="Project")
+		self.set_style("min-width", "400px")
+		self.set_style("min-height", "400px")
+
+	def not_exists(self):
+		print("DEBUG:", ~self.name, "in", ~self.projects, "=", ~self.name not in ~self.projects)
+		return ~self.name not in ~self.projects
+
+	def error(self, msg):
+		self.msg.show_error(msg)
