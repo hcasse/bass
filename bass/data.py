@@ -5,6 +5,7 @@ import configparser
 import os
 import os.path
 import shutil
+import subprocess
 
 class DataException(Exception):
 	"""Error raised by the database."""
@@ -118,6 +119,10 @@ class Template:
 	def __str__(self):
 		return self.name
 
+	def get_exec_name(self):
+		"""Get the executable name."""
+		return self.exec
+
 
 class Project:
 	"""The project of a user."""
@@ -127,7 +132,6 @@ class Project:
 		self.user = user
 		self.name = name
 		self.files = None
-		self.exec_path = None
 		self.template = template
 		self.path = None
 
@@ -141,17 +145,13 @@ class Project:
 		"""Get the path of .ini file of the project."""
 		return os.path.join(self.get_path(), "project.ini")
 
-	def get_exec_name(self):
-		"""Get the name of the executable of the project."""
-		if self.exec_path == None:
-			(name, ext) = os.path.splitext(self.files[0].name)
-			self.exec_path = "%s.%s" % (name, config.EXEC_EXT)
-		return self.exec_path
+	def get_exec_path(self):
+		"""Get the path of the executable."""
+		return os.path.join(self.get_path(), self.template.get_exec_name())
 
 	def get_sources(self):
 		"""Return source files of the project."""
 		for file in self.get_files():
-			print("DEBUG: file=", file.get_name())
 			if not self.template.is_hidden(file.get_name()) \
 			and file.get_name().endswith(".s"):
 				yield file
@@ -177,7 +177,7 @@ class Project:
 	def load(self):
 		"""Load the content of a project."""
 		config = configparser.ConfigParser()
-		config.read(self.get_init_path())
+		config.read(self.get_ini_path())
 		tname = config.get("project", "template", fallback="")
 		self.template = self.app.get_template(tname)
 		if self.template is None:
@@ -225,6 +225,20 @@ class Project:
 			shutil.rmtree(path)
 			error(self.app, "cannot write project config into project %s: %s" % (self.name, e))
 
+	def __str__(self):
+		return self.name
+
+	def compile(self):
+		"""Compile the project. Return a triple (command result, output text, error text)."""
+		cp = subprocess.run(
+				"make",
+				shell = True,
+				cwd = self.get_path(),
+				encoding = "UTF8",
+				capture_output = True
+			)
+		return (cp.returncode, "make\n" + cp.stdout, cp.stderr)
+
 class User:
 	"""A user."""
 
@@ -234,6 +248,9 @@ class User:
 		self.path = path
 		self.email = email
 		self.projects = []
+
+	def get_name(self):
+		return self.user
 
 	def get_path(self):
 		"""Get the directory of the user."""
@@ -263,7 +280,8 @@ class User:
 		self.email = config.get("user", "email", fallback="")
 		for name in config.get("user", "projects").split(";"):
 			if name != "":
-				self.add_project(Project(name))
+				self.add_project(Project(self, name))
+				print("DEBUG: add project", name)
 
 	def save(self):
 		"""Save the user file."""
@@ -285,5 +303,4 @@ class User:
 		except DataException as e:
 			shutil.rmtree(self.path)
 			error(str(e))
-
 

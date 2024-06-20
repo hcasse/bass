@@ -27,9 +27,16 @@ LINE_RE = re.compile("^([^\.]+\.[^:]:[0-9]+:).*$")
 
 
 class MyTabEditor(orc.Tab):
-	def __init__(self, label, component):
+	"""A source file editor."""
+
+	def __init__(self, label, component, file):
 		self.component = component
 		self.label = label
+		component.source_file = file
+
+	def get_file(self):
+		"""Get the file for the editor."""
+		return self.file
 
 	def get_label(self):
 		return self.label
@@ -150,52 +157,40 @@ class Session(orc.Session):
 	def reset(self):
 		pass
 
-	def compile(self):
-		if (self.user.id == -1):
-			self.event_errorConnection()
+	def compile(self, n=-1, editor=None, content=None):
+		if n >= 0:
+			print("DEBUG: got", editor.source_file)
+			editor.source_file.save(content)
+		n += 1
+		if n >= len(self.editors):
+			print("DEBUG: finaly compiling!")
+			self.then_compile()
 		else:
-			self.editor.get_content(self.save_and_compile)
+			def transfer(editor, content):
+				self.compile(n, editor, content)
+			self.editors[n].get_component().get_content(transfer)
 
-	def save_and_compile(self, editor, content):
-		if (self.user.id == -1):
-			self.event_errorConnection()
+	def then_compile(self):
+		self.console.clear()
+		self.console.append("<b>Compiling...</b>")
+		(result, output, error) = self.project.compile()
+		for line in output.split("\n"):
+			self.print_line(line)
+		for line in error.split("\n"):
+			self.print_line(line)
+		if result != 0:
+			self.console.append(orc.text(orc.FAILED, "FAILED..."))
 		else:
-			self.file.save(content)
-			cmd = config.CC_COMMAND % (
-					self.project.get_exec_name(),
-					self.file.name
-				)
-			self.console.clear()
-			self.console.append("<b>Compiling...</b>")
-			self.console.append(cmd)
-			rc = subprocess.run(
-					cmd,
-					shell = True,
-					cwd = self.project.get_path(),
-					encoding = "UTF8",
-					capture_output = True
-				)
-
-			for line in rc.stdout.split("\n"):
-				self.print_line(line)
-			for line in rc.stderr.split("\n"):
-				self.print_line(line)
-			if rc.returncode != 0:
-				self.console.append(orc.text(orc.FAILED, "FAILED..."))
-			else:
-				self.console.append(orc.text(orc.SUCCESS, "SUCCESS!"))
-				if self.perform_start:
-					self.start_sim()
+			self.console.append(orc.text(orc.SUCCESS, "SUCCESS!"))
+			#if self.perform_start:
+			#	self.start_sim()
 
 	def print_line(self, line):
-		if (self.user.id == -1):
-			self.event_errorConnection()
-		else:
-			m = LINE_RE.match(line)
-			if m != None:
-				p = m.end(1)
-				line = orc.text(orc.INFO, line[:p]) + line[p:]
-			self.console.append(line)
+		m = LINE_RE.match(line)
+		if m != None:
+			p = m.end(1)
+			line = orc.text(orc.INFO, line[:p]) + line[p:]
+		self.console.append(line)
 
 	def enable_sim(self, enabled = True):
 		self.compile_action.set_enabled(not enabled)
@@ -985,11 +980,10 @@ class Session(orc.Session):
 			self.tabEditeurDisassembly.remove(1)
 
 		# build new tabs
-		print("DEBUG: building tabs")
 		for f in self.project.get_sources():
-			print("DEBUG: add tab", f.get_name())
-			t = MyTabEditor(f.name, orc.Editor(init = f.load()))
+			t = MyTabEditor(f.name, orc.Editor(init = f.load()), f)
 			self.tabEditeurDisassembly.insert(t, 0)
+			self.editors.append(t)
 
 		# update remaining of window
 		self.tabEditeurDisassembly.current = -1
@@ -1028,7 +1022,9 @@ class Session(orc.Session):
 	def get_index(self):
 
 		self.user_label = orc.Label("")
+		self.user_label.set_style("min-width", "8em")
 		self.project_label = orc.Label("")
+		self.project_label.set_style("min-width", "8em")
 
 		# prepare run actions
 		self.compile_action = orc.Button(orc.Icon("check"),
@@ -1054,7 +1050,7 @@ class Session(orc.Session):
 		source = ""
 		if self.file != None:
 			source = self.file.load()
-		self.editor = orc.Editor(init = source)
+		self.editors = []
 
 		# initialize console
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
@@ -1114,7 +1110,7 @@ class Session(orc.Session):
 
 		self.tabEditeurDisassembly = orc.TabbedPane([
 			MyTabConsole("Disassembly", self.consoleDis),
-			MyTabEditor("main.s", self.editor)
+			MyTabEditor("main.s", Editor(init = ""), None)
 		])
 
 
@@ -1146,7 +1142,7 @@ class Session(orc.Session):
 				orc.Header("BASS", [
 					orc.Button(image = orc.Icon("box")),
 					self.project_label,
-					orc.Button(image = orc.Icon("person"), on_click=self.event_connexion),
+					orc.Button(image = orc.Icon("person"), 			on_click=self.event_connexion),
 					self.user_label,
 				]),
 				orc.ToolBar([
@@ -1201,10 +1197,14 @@ class Session(orc.Session):
 	# Connecting functions
 
 	def setup_project(self, project):
-		"""Setup the current project."""
+		"""Setup the project in the main window."""
 		self.project = project
 		self.loadProjectsGroup()
 		self.loadProjectFilesEditor()
+
+	def setup_user(self, user):
+		"""Set the user in the main window."""
+		self.user_label.set_text(user.get_name())
 
 	def login_user(self, console):
 		""" Try to log-in a user reacting to the login dialog."""
@@ -1215,7 +1215,7 @@ class Session(orc.Session):
 			self.login_dialog.error("Log-in error!")
 		else:
 			user_dir = os.path.join(self.get_application().get_data_dir(), user)
-			self.user = User(self.get_application, user, user_dir)
+			self.user = User(self.get_application(), user, user_dir)
 			self.user.load()
 			self.user_label.set_content(user)
 			self.login_dialog.hide()
@@ -1238,6 +1238,7 @@ class Session(orc.Session):
 		self.user = User(self.get_application(), user, user_dir)
 		try:
 			self.user.create()
+			self.setup_user(self.user)
 			self.login_dialog.hide()
 			self.select_project()
 		except DataException as e:
@@ -1282,12 +1283,20 @@ class Session(orc.Session):
 			project.create()
 			self.select_dialog.hide()
 			self.setup_project(project)
+			self.user.add_project(project)
+			self.user.save()
 		except DataException as e:
 			self.select_dialog.error(str(e))
 
 	def open_project(self, interface):
 		"""Open an existing project."""
-		pass
+		project = self.select_dialog.projects[self.select_dialog.selected_project[0]]
+		try:
+			project.load()
+			self.setup_project(project)
+			self.select_dialog.hide()
+		except DataException as e:
+			self.select_dialog.error("cannot open %s project: %s" % (project.get_name(), e))
 
 
 class Application(orc.Application):
