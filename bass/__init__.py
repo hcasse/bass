@@ -14,7 +14,8 @@ class Simulator:
 	"""Interface to the simulator."""
 
 	def __init__(self, path):
-		"""Build the simulator with the given path for the executable."""
+		"""Build the simulator with the given path for the executable.
+		If there is an error, raises a SimException."""
 		self.exec_path = path
 
 	def release(self):

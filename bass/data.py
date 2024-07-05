@@ -7,6 +7,9 @@ import os.path
 import shutil
 import subprocess
 
+from bass import arm
+
+
 class DataException(Exception):
 	"""Error raised by the database."""
 
@@ -248,6 +251,13 @@ class Project:
 				capture_output = True
 			)
 		return (cp.returncode, "make\n" + cp.stdout, cp.stderr)
+
+	def new_sim(self):
+		"""Start simulator for the project executable.
+		Return the simulator. If there is an error, raises a SimException."""
+		return arm.Simulator(self.get_exec_path())
+
+
 
 class User:
 	"""A user."""

@@ -10,7 +10,7 @@ class RegisterPane(orc.VGroup):
 		self.fields = [orc.Field(size=10) for _ in range(13)]
 		for i in range(4):
 			self.fields.append(orc.Field(size=10,read_only=True))
-		self.fieldR0= orc.Field(size=10)
+		#self.fieldR0= orc.Field(size=10)
 
 		orc.VGroup.__init__(self, [
 			#orc.Button("Reset", on_click=self.reset),
@@ -42,3 +42,30 @@ class RegisterPane(orc.VGroup):
 		"""Initialize the register to 0."""
 		for i in range(13):
 			self.fields[i].set_value(hex(0))
+
+	def updateFieldRegister(self):
+		"""
+			Update the register of the interface.
+		"""
+		self.R = None
+		self.Ri = None
+		registerBanks=self.sim.getNbRegisterBank()
+		print("NB banque de registre = ",registerBanks)
+		for i in range(0, registerBanks):
+			bank = self.sim.getRegisterBank(i)
+			if bank[0] == 'R':
+				self.R = bank
+				self.Ri = i
+			if bank[2] == 1:
+				self.fieldRegistre[16].set_value(hex(self.sim.getRegister(i, 0)))
+			for j in range(0, bank[2]):
+				self.fieldRegistre[j].set_value(hex(self.sim.getRegister(i, j)))
+
+	def updateRegisterFromField(self):
+		"""
+			Update register value from field.
+		"""
+		Ritemp= self.sim.getRegisterBanks()
+		for i in range(13):
+			self.sim.setRegister(Ritemp,i,self.fieldRegistre[0].get_content())
+
