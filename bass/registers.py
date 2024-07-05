@@ -13,7 +13,8 @@ class RegisterPane(orc.VGroup):
 		self.fieldR0= orc.Field(size=10)
 
 		orc.VGroup.__init__(self, [
-			orc.Button("Reset", on_click=self.reset),
+			#orc.Button("Reset", on_click=self.reset),
+			orc.Label("Registers"),
 			orc.HGroup([orc.Label("R0"), self.fields[0]]),
 			orc.HGroup([orc.Label("R1"), self.fields[1]]),
 			orc.HGroup([orc.Label("R2"), self.fields[2]]),

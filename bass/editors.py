@@ -76,3 +76,20 @@ class EditorPane(orc.TabbedPane):
 		self.append(tab)
 		self.editors.append(tab)
 
+
+	def save_next(self, fun, n=-1, editor=None, content=None):
+		"""Iterate for saving all editors."""
+		if n >= 0:
+			editor.source_file.save(content)
+		n += 1
+		if n >= len(self.editors):
+			fun()
+		else:
+			def transfer(editor, content):
+				self.save_next(fun, n, editor, content)
+			self.editors[n].get_component().get_content(transfer)
+
+	def save_all(self, fun):
+		"""Save all editors and then call function fun."""
+		self.save_next(fun)
+

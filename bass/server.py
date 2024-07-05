@@ -156,17 +156,7 @@ class Session(orc.Session):
 		pass
 
 	def compile(self, n=-1, editor=None, content=None):
-		if n >= 0:
-			print("DEBUG: got", editor.source_file)
-			editor.source_file.save(content)
-		n += 1
-		if n >= len(self.editors):
-			print("DEBUG: finaly compiling!")
-			self.then_compile()
-		else:
-			def transfer(editor, content):
-				self.compile(n, editor, content)
-			self.editors[n].get_component().get_content(transfer)
+		self.editor_pane.save_all(self.then_compile)
 
 	def then_compile(self):
 		self.console.clear()
@@ -180,8 +170,6 @@ class Session(orc.Session):
 			self.console.append(orc.text(orc.FAILED, "FAILED..."))
 		else:
 			self.console.append(orc.text(orc.SUCCESS, "SUCCESS!"))
-			#if self.perform_start:
-			#	self.start_sim()
 
 	def print_line(self, line):
 		m = LINE_RE.match(line)
@@ -289,18 +277,19 @@ class Session(orc.Session):
 
 	#---------------------dialog----------------------------#
 	def createDialog(self):
-		self.make_dialog_connexion()
-		self.make_dialog_error()
-		self.make_dialog_Newaccount()
-		self.make_dialog_forgotPassword()
-		self.make_dialog_renameProject()
-		self.make_dialog_renameFile()
-		self.make_dialog_removeProject()
-		self.make_dialog_removeFile()
-		self.make_dialog_securityRemoveProject()
-		self.make_dialog_securityRemoveFile()
-		self.make_dialog_errorConnection()
-		self.make_dialogDeconnexion()
+		pass
+		#self.make_dialog_connexion()
+		#self.make_dialog_error()
+		#self.make_dialog_Newaccount()
+		#self.make_dialog_forgotPassword()
+		#self.make_dialog_renameProject()
+		#self.make_dialog_renameFile()
+		#self.make_dialog_removeProject()
+		#self.make_dialog_removeFile()
+		#self.make_dialog_securityRemoveProject()
+		#self.make_dialog_securityRemoveFile()
+		#self.make_dialog_errorConnection()
+		#self.make_dialogDeconnexion()
 
 	#-------event_error--------------------------------------#
 	def event_error(self, texte):
@@ -1324,16 +1313,16 @@ class Session(orc.Session):
 				orc.HGroup([
 					self.register_pane,
 					orc.VGroup([
-						orc.HGroup([
-							orc.Button("Nouveau fichier", on_click=self.event_templateFile),
-							orc.Button("Supprimer le fichier", on_click=self.event_removeFile),
-							orc.Button("Renommer le fichier", on_click=self.event_renameFile),
-							orc.Button("first", on_click=self.first),
-							orc.Spring(hexpand=True),
-							orc.Button("Save All", on_click=self.saveAll),
-							orc.Button("Renommer le Projet", on_click=self.event_renameProject),
-							orc.Button("Supprimer le Projet", on_click=self.event_removeProject)
-						]),
+						#orc.HGroup([
+						#	orc.Button("Nouveau fichier", on_click=self.event_templateFile),
+						#	orc.Button("Supprimer le fichier", on_click=self.event_removeFile),
+						#	orc.Button("Renommer le fichier", on_click=self.event_renameFile),
+						#	orc.Button("first", on_click=self.first),
+						#	orc.Spring(hexpand=True),
+						#	orc.Button("Save All", on_click=self.saveAll),
+						#	orc.Button("Renommer le Projet", on_click=self.event_renameProject),
+						#	orc.Button("Supprimer le Projet", on_click=self.event_removeProject)
+						#]),
 					self.editor_pane
 				]),
 				self.memoryConsoleGroup
