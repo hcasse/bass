@@ -11,6 +11,7 @@ class DataException(Exception):
 	"""Error raised by the database."""
 
 	def __init__(self, msg):
+		Exception.__init__(self)
 		self.msg = msg
 
 	def __str__(self):
@@ -24,8 +25,11 @@ def error(app, msg):
 
 
 class File:
+
 	def __init__(self, name = "main.s"):
 		self.name = name
+		self.project = None
+		self.currentFint = None
 
 	def get_name(self):
 		"""Get the name of the file."""
@@ -62,7 +66,9 @@ class File:
 		if not os.path.exists(self.get_path):
 			self.project.user.session.event_error("Le fichier "+self.name+" n'a pas été trouvé.")
 		elif os.path.exists(os.path.join(self.project.get_path(), new_name)):
-			self.project.user.session.event_error("Impossible de nommer le fichier "+new_name+". Ce projet contient déjà un fichier avec ce nom.")
+			self.project.user.session.event_error(
+				f"Impossible de nommer le fichier {new_name}. \
+				Ce projet contient déjà un fichier avec ce nom.")
 		else:
 			self.delete()
 			self.name = new_name
@@ -114,7 +120,7 @@ class Template:
 			for file in self.install:
 				shutil.copy(os.path.join(self.path, file), to)
 		except OSError as e:
-			error(self.app, "template file %s cannot be copied to %s: %s" % (file, to, e))
+			error(self.app, f"template file {file} cannot be copied to {to}: {e}")
 
 	def __str__(self):
 		return self.name
@@ -134,6 +140,10 @@ class Project:
 		self.files = None
 		self.template = template
 		self.path = None
+
+	def get_name(self):
+		"""Get the name of the project."""
+		return self.name
 
 	def get_path(self):
 		"""Get the path to the directory of the project."""
@@ -159,7 +169,7 @@ class Project:
 	def add_file(self, file):
 		"""Add a file to a project."""
 		if self.files is None:
-			self.load_project()
+			self.load()
 		file.project = self
 		self.files.append(file)
 
@@ -181,7 +191,7 @@ class Project:
 		tname = config.get("project", "template", fallback="")
 		self.template = self.app.get_template(tname)
 		if self.template is None:
-			self.app.log("no template named %s" % tname)
+			self.app.log(f"no template named {tname}")
 			self.template = Template(self.app, tname)
 
 	def delete_project(self):
@@ -205,7 +215,7 @@ class Project:
 		try:
 			os.mkdir(path)
 		except OSError as e:
-			error(self.app, "cannot create project directory %s: %s" % (path, e))
+			error(self.app, f"cannot create project directory {path}: {e}")
 
 		# copy files
 		try:
@@ -223,7 +233,7 @@ class Project:
 				config.write(out)
 		except OSError as e:
 			shutil.rmtree(path)
-			error(self.app, "cannot write project config into project %s: %s" % (self.name, e))
+			error(self.app, f"cannot write project config into project {self.name}: {e}")
 
 	def __str__(self):
 		return self.name
@@ -242,22 +252,26 @@ class Project:
 class User:
 	"""A user."""
 
-	def __init__(self, app, user, path, email=""):
+	def __init__(self, app, name, email=""):
 		self.app = app
-		self.user = user
-		self.path = path
+		self.name = name
 		self.email = email
 		self.projects = []
+		self.path = None
 
 	def get_name(self):
-		return self.user
+		return self.name
 
 	def get_path(self):
 		"""Get the directory of the user."""
+		if self.path is None:
+			print("DEBUG: user name =", self.name)
+			self.path = os.path.join(self.app.get_data_dir(), self.name)
 		return self.path
 
 	def get_account_path(self):
-		return os.path.join(self.path, "account.ini")
+		""""Get the path of the account .ini file."""
+		return os.path.join(self.get_path(), "account.ini")
 
 	def add_project(self, project):
 		""""Add a project to the user."""
@@ -295,12 +309,12 @@ class User:
 	def create(self):
 		"""Create the user: its directory and .ini file."""
 		try:
-			os.mkdir(self.path)
+			os.mkdir(self.get_path())
 		except OSError as e:
-			error(self.app, "cannot create directory for user %s: %s" % (self.name, e))
+			error(self.app, f"cannot create directory for user {self.name}: {e}")
 		try:
 			self.save()
 		except DataException as e:
 			shutil.rmtree(self.path)
-			error(str(e))
+			error(self.app, str(e))
 

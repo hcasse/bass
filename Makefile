@@ -14,7 +14,18 @@ export PYTHONPATH=$(PWD)/Orchid:$(PWDd)
 all:
 
 run:
-	$(PYTHON) -m bass.server
+	$(PYTHON) -m bass.server --debug
+
+
+debug:
+	$(PYTHON) -m bass.server --debug-user moi --debug-project=sum
+
+test:
+	$(PYTHON) -m bass.test
+
+autodoc:
+	export PYTHONPATH=$(PWD):$(PWD)/Orchid; \
+	pydoc3 -b
 
 setup: git-orchid git-gliss git-armv5t
 

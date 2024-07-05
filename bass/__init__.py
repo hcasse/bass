@@ -1,8 +1,10 @@
 """Main module of the BASS."""
 
-class Exception(Exception):
+class SimException(Exception):
+	"""Exception thrown when an error arises in the simulation."""
 
 	def __init__(self, msg):
+		Exception.__init__(self)
 		self.msg = msg
 
 	def __str__(self):

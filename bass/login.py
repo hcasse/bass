@@ -1,16 +1,17 @@
 
+"""Provides login and project selection dialogs."""
 
-from orchid import *
-from orchid.mind import *
+from orchid import \
+	HGroup, VGroup, var, Action, ListView, MessageLabel, Field, \
+	Button, PasswordField, Label, hspring, matches, if_error, equals, \
+	Predicate, EmailField, ListVar, Form, not_null, is_password
 from orchid import dialog
-from orchid.models import ListVar
-from orchid.list import *
 
 class LoginDialog(dialog.Base):
 
 	def __init__(self, server, page):
-		self.user = Var("", label="User")
-		self.pwd = Var("", label="Password")
+		self.user = var("", label="User")
+		self.pwd = var("", label="Password")
 		login = Action(fun=server.login_user, label="Log in")
 		anon = Action(fun=server.login_anon, label="Anonymous connect")
 		retrieve = Action(fun=server.retrieve_pwd, label="Retrieve")
@@ -42,10 +43,10 @@ class RegisterDialog(dialog.Base):
 
 	def __init__(self, server, page):
 		self.server = server
-		self.user = Var("", label="User")
-		self.pwd = Var("", label="Password")
-		self.repwd = Var("", label="Re-type password")
-		self.email = Var("", label="EMail")
+		self.user = var("", label="User")
+		self.pwd = var("", label="Password")
+		self.repwd = var("", label="Re-type password")
+		self.email = var("", label="EMail")
 		self.msg = MessageLabel("")
 
 		enable = \
@@ -90,21 +91,25 @@ class SelectDialog(dialog.Base):
 		self.templates = ListVar(list(server.get_application().get_templates().values()))
 		self.selected_project = ListVar([])
 		self.selected_template = ListVar([])
-		self.name = Var("")
-		self.msg = MessageLabel("")
+		self.name = var("")
 
+		create_enable = not_null(self.selected_template) \
+			& if_error(not_null(self.name), "Name required!") \
+			& if_error(Predicate(fun=self.not_exists), "Project already exists!")
 		create_project = Action(
 				fun = server.create_project,
 				label = "Create",
-				enable =  not_null(self.selected_template) \
-						& if_error(not_null(self.name), "Name required!") \
-						& if_error(Predicate(fun=self.not_exists), "Project already exists!")
+				enable =  create_enable
 			)
+
+		open_enable = not_null(self.selected_project)
 		open_project = Action(
 				fun = server.open_project,
 				label = "Open",
-				enable = not_null(self.selected_project)
+				enable = open_enable
 			)
+
+		self.msg = MessageLabel(preds = [create_enable, open_enable])
 
 		main = VGroup([
 			HGroup([
