@@ -5,10 +5,13 @@ import orchid as orc
 class RegisterPane(orc.VGroup):
 
 	def __init__(self):
+		self.sim = None
+		self.R = None
+		self.Ri = None
 
 		# build field
 		self.fields = [orc.Field(size=10) for _ in range(13)]
-		for i in range(4):
+		for _ in range(4):
 			self.fields.append(orc.Field(size=10,read_only=True))
 		#self.fieldR0= orc.Field(size=10)
 
@@ -57,9 +60,9 @@ class RegisterPane(orc.VGroup):
 				self.R = bank
 				self.Ri = i
 			if bank[2] == 1:
-				self.fieldRegistre[16].set_value(hex(self.sim.getRegister(i, 0)))
+				self.fields[16].set_value(hex(self.sim.getRegister(i, 0)))
 			for j in range(0, bank[2]):
-				self.fieldRegistre[j].set_value(hex(self.sim.getRegister(i, j)))
+				self.fields[j].set_value(hex(self.sim.getRegister(i, j)))
 
 	def updateRegisterFromField(self):
 		"""
@@ -67,5 +70,5 @@ class RegisterPane(orc.VGroup):
 		"""
 		Ritemp= self.sim.getRegisterBanks()
 		for i in range(13):
-			self.sim.setRegister(Ritemp,i,self.fieldRegistre[0].get_content())
+			self.sim.setRegister(Ritemp,i,self.fields[0].get_content())
 

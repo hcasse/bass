@@ -4,27 +4,22 @@
 """BASS Application."""
 
 import argparse
-import configparser
 from datetime import datetime
 import os
 import os.path
 import re
-import shutil
 import sys
 
 import bass
-import bass.arm as config
 import Orchid.orchid as orc
-import subprocess
 from Orchid.orchid import popup
 from Orchid.orchid import dialog
-import pandas as pd
-import bass.utilDisassembly as util
 
-from bass.login import *
-from bass.data import *
+from bass.login import LoginDialog, RegisterDialog, SelectDialog
+from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
-from bass.editors import EditorPane, MyTabConsole
+from bass.editors import EditorPane
+
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
 
@@ -38,7 +33,6 @@ class Session(orc.Session):
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
 		self.user = None
-		#self.user.session = self
 		self.project = None
 
 		#if self.project.files != []:
@@ -76,6 +70,20 @@ class Session(orc.Session):
 		self.reset_action = orc.Action(self.reset, enable=paused,
 			icon=orc.Icon("reset"), help="Reset the simulation.")
 
+		# UI
+		self.page = None
+		self.editor_pane = None
+		self.memory_pane = None
+		self.register_pane = None
+		self.user_label = None
+		self.project_label = None
+		self.console = None
+
+		# dialog
+		self.login_dialog = None
+		self.register_dialog = None
+		self.select_dialog = None
+
 	def get_user(self):
 		"""Get the current user."""
 		return self.user
@@ -84,12 +92,25 @@ class Session(orc.Session):
 		"""Get the current project."""
 		return self.project
 
+	def update_sim_display(self):
+		"""Udpdate the display according to the current simulator state."""
+		pc = self.sim.get_pc()
+		self.editor_pane.update_pc(pc)
+
 	def start_sim(self):
 		"""Start the simulation."""
 		try:
+
+			# start the simulator
 			self.sim = self.get_project().new_sim()
 			self.started.set(True)
 			self.console.append(orc.text(orc.INFO, "Start simulation."))
+
+			# display the disassembly tab
+			disasm = self.get_project().get_disassembly()
+			self.editor_pane.show_disasm(disasm)
+			self.update_sim_display()
+
 		except bass.SimException as e:
 			self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
 
@@ -107,14 +128,13 @@ class Session(orc.Session):
 			self.start_sim()
 
 	def step(self, interface):
-		#print("Simulateur ",self.sim)
-		self.sim.stepInto()
-		self.updateFieldRegister()
+		self.sim.step()
+		self.update_sim_display()
 
 	def step_over(self, interface):
 		while self.sim.nextInstruction()!=self.sim.get_label("_exit"):
-			self.step()
-		self.step()
+			self.step(self.page.get_interface())
+		self.step(self.page.get_interface())
 		self.stop_sim()
 
 	def run_to(self, interface):
@@ -154,46 +174,6 @@ class Session(orc.Session):
 			line = orc.text(orc.INFO, line[:p]) + line[p:]
 		self.console.append(line)
 
-	def enable_sim(self, enabled = True):
-		pass
-		#self.compile_action.set_enabled(not enabled)
-		#self.step_action.set_enabled(enabled)
-		#self.step_over_action.set_enabled(enabled)
-		#self.run_to_action.set_enabled(enabled)
-		#self.go_on_action.set_enabled(enabled)
-		#self.reset_action.set_enabled(enabled)
-
-	def enable_run(self, enabled = True):
-		pass
-		#self.enable_sim(not enabled)
-		#self.set_enabled(enabled)
-
-	def print_Disassembly(self):
-		"""
-			Display of disassembly console.
-		"""
-		exec_path = os.path.join(self.project.get_path(), self.project.get_exec_name())
-		nameFile=os.path.join(self.project.get_path(),"disassembly.txt")
-		util.createDiassembly(exec_path, nameFile, self.project.get_path())
-
-		with open(nameFile, 'r') as f:
-			lignes = f.readlines()
-
-		for ligne in lignes:
-			self.consoleDis.append(ligne)
-
-
-	def print_Memory(self):
-		exec_path = os.path.join(self.project.get_path(), self.project.get_exec_name())
-		nameFile=os.path.join(self.project.get_path(),"memory.txt")
-		util.createMemory(exec_path,nameFile,self.project.get_path())
-
-		with open(nameFile, 'r') as f:
-			lignes = f.readlines()
-
-		for ligne in lignes:
-			self.consoleMemory.append(ligne)
-
 	def help(self):
 		pass
 
@@ -202,7 +182,7 @@ class Session(orc.Session):
 		d.show()
 
 	def eventResetButton(self):
-		self.initRegister()
+		#self.initRegister()
 		print("Button reset appuye")
 
 	def menuImport(self):
@@ -214,6 +194,9 @@ class Session(orc.Session):
 	def menuNew(self):
 		pass
 
+	def edit_user(self, interface):
+		"""Called to edit the buser."""
+		pass
 
 	#----------------menu button--------------------
 	def make_menu(self):
@@ -226,183 +209,22 @@ class Session(orc.Session):
 		)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	#--------------fonction sur les tab editeur et disassembly---------------
-	def addFile(self, file):
-		if os.path.exists(os.path.join(
-			self.user.projects[self.currentProject].get_path(),
-			self.fieldFileName.get_value())
-		):
-			self.event_error(f"Impossible de nommer le fichier \
-				{self.fieldFileName.get_content()}. \
-				Ce projet contient déjà un fichier avec ce nom.")
-		else:
-			file.name = self.fieldFileName.get_value()
-			self.user.projects[self.currentProject].add_file(file)
-			self.editorTempFile.get_content(file.saveEditeur)
-			self.event_hideValidTemplateFile()
-			self.event_hideValidNameTemplateFile()
-			self.event_hideChoiceFile()
-
-	def addProject(self, project):
-		if os.path.exists(os.path.join(self.user.get_path(), self.fieldProjectName.get_value())):
-			self.event_error(f"Impossible de nommer le projet \
-				{self.fieldProjectName.get_content()}. \
-				Un autre de vos projets est déjà nommé comme cela.")
-		else:
-			oldName = project.name
-			tPath = os.path.join(config.DATADIR, str(0))
-			dirPath = os.path.join(tPath, oldName)
-			project.name = self.fieldProjectName.get_value()
-			self.user.add_project(project)
-			for f in project.files:
-				f.save( f.loadWithPath(os.path.join(dirPath, f.name)) )
-			self.loadProjectsGroup()
-			#self.loadProjectFilesEditor( len(self.user.projects)-1 )
-			self.event_hideChoiceProject()
-			self.event_hideValidTemplateProject()
-			self.event_hideValidNameTemplateProject()
-
-	def first(self):
-		"""first
-		"""
-		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.get_tab(0))
-
-	def saveAll(self):
-		"""save
-		"""
-		if self.user.id == -1:
-			self.event_errorConnection()
-		else:
-			self.intCourant = self.tabEditeurDisassembly.current
-			self.intPCourant = self.currentProject
-			for i in range(len(self.tabEditeurDisassembly.tabs)-1):
-				self.tabEditeurDisassembly.select(i+1)
-				self.tabEditeurDisassembly.select(i+1)
-				file = self.user.projects[self.currentProject].files[i]
-				file.AJour = False
-				editor = self.tabEditeurDisassembly.tabs[i+1].get_component()
-				editor.get_content(file.saveEditeur)
-
-	def renameFile(self):
-		"""rename
-		"""
-		self.tabEditeurDisassembly.tabs[self.currentFint].get_component().get_content(
-			lambda: self.currentFile.rename(new_name = self.fieldFileName.get_value()))
-
-	def renameProject(self):
-		"""rename
-		"""
-		#curP = self.currentProject
-		verifReturn = self.user.projects[self.currentProject]. \
-			rename_project(self.fieldProjectName.get_value())
-		if verifReturn != 0:
-			self.event_error(verifReturn)
-		else:
-			self.loadProjectsGroup()
-			#self.loadProjectFilesEditor(curP)
-			self.tabEditeurDisassembly.select(self.currentFint)
-			self.event_hideRenameProject()
-
-	def makeButtonLambdaProject(self, project):
-		"""sdf
-		"""
-		return orc.Button(self.user.projects[project].name)
-					#on_click=lambda: self.loadProjectFilesEditor(project))
-
-	def loadProjectFilesEditor(self):
-		"""Load the project in the file editor."""
-
-		# update remaining of window
-		self.tabEditeurDisassembly.current = -1
-		self.tabEditeurDisassembly.panes.current = -1
-		self.tabEditeurDisassembly.labs.current = -1
-		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
-		self.tabEditeurDisassembly.select(self.tabEditeurDisassembly.current)
-		for i in range(len(self.tabEditeurDisassembly.tabs)):
-			self.tabEditeurDisassembly.select(i)
-			self.tabEditeurDisassembly.select(i)
-		if len(self.tabEditeurDisassembly.tabs) > 0 :
-			self.first()
-
-
-	def edit_user(self):
-		"""Start editing user."""
-		pass
-
 	def get_index(self):
 
+		# prepare user/project display
 		self.user_label = orc.Label("")
 		self.user_label.set_style("min-width", "8em")
 		self.project_label = orc.Label("")
 		self.project_label.set_style("min-width", "8em")
 
-		# prepare run actions
-		#self.playstop_action = orc.Button(orc.Icon("play", color="green"),
-		#	on_click=self.playstop)
-
-		# initialize console
-		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
-
-		self.consoleDis=orc.Console(init="Disassembly")
-
-		#--------------------------Panel de gauche-----------------------------#
-		self.consoleMemory= orc.Console(init="")
-		hlist = []
-		hIntern = []
-		hIntern.append(orc.Spring(hexpand=True))
-		if self.user is not None:
-			for i in range(len(self.user.projects)):
-				if (i%3 == 0 and i!=0):
-					hlist.append( orc.HGroup(hIntern) )
-					hIntern = []
-					hIntern.append(orc.Spring(hexpand=True))
-				but = self.makeButtonLambdaProject(i)
-				hIntern.append(but)
-				hIntern.append(orc.Spring(hexpand=True))
-		hlist.append( orc.HGroup(hIntern) )
-		l = [
-			orc.Spring(vexpand=True),
-			orc.Spring(vexpand=True),
-			orc.HGroup([
-					orc.Label("Liste de vos Projets :"),
-					orc.Spring(hexpand=True),
-				#orc.Button("Ajouter un nouveau projet",
-				#	on_click=self.event_templateProject)
-				]),
-				orc.Spring(vexpand=True)
-		]
-		l.extend(hlist)
-
-
-		self.projectsGroup = orc.VGroup(l)
-
-
-		self.tabMemoryProjet = orc.TabbedPane([
-			MyTabConsole("Memory",self.consoleMemory),
-			MyTabConsole("Projets",self.projectsGroup)
-		])
-		self.memoryConsoleGroup = self.tabMemoryProjet
-
 		# generate the page
+		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
+		self.memory_pane = orc.Console(init = "Memory")
 		self.register_pane = RegisterPane()
 		self.editor_pane = EditorPane()
-		editor_group = HGroup([
+		editor_group = orc.HGroup([
 			self.editor_pane,
-			self.memoryConsoleGroup
+			self.memory_pane
 		])
 		editor_group.weight = 3
 		self.console.weight = 1
@@ -411,7 +233,7 @@ class Session(orc.Session):
 				orc.Header("BASS", [
 					orc.Button(image = orc.Icon("box")),
 					self.project_label,
-					orc.Button(image = orc.Icon("person"), 			on_click=self.edit_user),
+					orc.Button(image = orc.Icon("person"), on_click=self.edit_user),
 					self.user_label,
 				]),
 				orc.ToolBar([
@@ -430,7 +252,7 @@ class Session(orc.Session):
 				]),
 				orc.HGroup([
 					self.register_pane,
-					VGroup([
+					orc.VGroup([
 						editor_group,
 						self.console
 					])
@@ -449,7 +271,7 @@ class Session(orc.Session):
 
 		# perform connection
 		if DEBUG:
-			self.get_application().log("entering debugging mode!")
+			self.get_application().log("INFO: entering debugging mode!")
 
 		if not DEBUG_USER:
 			self.login_dialog.show()
@@ -618,11 +440,11 @@ class Application(orc.Application):
 
 	def log(self , msg):
 		"""Log a message."""
-		print("LOG: %s: %s\n" % (datetime.today(), msg))
+		print(f"LOG: {datetime.today()}: {msg}\n")
 
 	def get_base_dir(self):
 		"""Get the directory containing code and assets."""
-		return self.root_dir
+		return self.base_dir
 
 	def get_data_dir(self):
 		"""Get the directory containing the data of the application."""
@@ -636,7 +458,7 @@ class Application(orc.Application):
 		"""Save passwords."""
 		with open(self.pwd_path, "w") as out:
 			for (user, pwd) in self.passwords.items():
-				out.write("%s:%s\n" % (user, pwd))
+				out.write(f"{user}:{pwd}\n" % (user, pwd))
 
 	def load_passwords(self):
 		"""Load passwords."""
@@ -649,12 +471,12 @@ class Application(orc.Application):
 					try:
 						i = line.index(':')
 					except ValueError:
-						self.log("bad formatted password line %s" % num)
+						self.log(f"bad formatted password line {num}")
 					user = line[:i]
 					pwd = line[i+1:].strip()
 					self.passwords[user] = pwd
 		except OSError as e:
-			self.log("cannot open password: %s" % e)
+			self.log(f"cannot open password: {e}")
 
 	def check_password(self, user, pwd):
 		"""Check a password."""

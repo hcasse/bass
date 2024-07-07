@@ -4,11 +4,12 @@
 import configparser
 import os
 import os.path
+import re
 import shutil
 import subprocess
 
+import bass
 from bass import arm
-
 
 class DataException(Exception):
 	"""Error raised by the database."""
@@ -25,6 +26,48 @@ def error(app, msg):
 	"""Raise an error and log the error."""
 	app.log(msg)
 	raise DataException(msg)
+
+
+class Disassembly(bass.Disassembly):
+	"""Disassembly for objdump output."""
+
+	LABEL_RE = re.compile(r"^([0-9a-fA-F]+)\s+<([^>]+)+>:")
+	INST_RE = re.compile(r"^\s*([0-9a-fA-F]+):\s+([0-9a-fA-F]+)\s+(.*)")
+
+	def __init__(self, output):
+		bass.Disassembly.__init__(self)
+		self.lines = []
+		self.labels = {}
+		base = ""
+		for line in output.split('\n'):
+
+			# look for a label
+			match = self.LABEL_RE.match(line)
+			if match is not None:
+				base = match.group(1)
+				addr = int(base, 16)
+				label = match.group(2)
+				self.labels[label] = addr
+				self.lines.append((addr, "", f"{label}:"))
+				continue
+
+			# look for an instruction
+			match = self.INST_RE.match(line)
+			if match is not None:
+				addr = match.group(1)
+				if len(addr) < len(base):
+					addr = base[0:len(base)-len(addr)] + addr
+				self.lines.append((int(addr, 16), match.group(2), match.group(3)))
+				continue
+
+	def get_code(self):
+		return self.lines
+
+	def find_label(self, label):
+		try:
+			return self.labels[label]
+		except KeyError:
+			return None
 
 
 class File:
@@ -257,6 +300,23 @@ class Project:
 		Return the simulator. If there is an error, raises a SimException."""
 		return arm.Simulator(self.get_exec_path())
 
+	def get_disassembly(self):
+		"""Get the disassembly of the current program."""
+
+		# get information
+		cp = subprocess.run(
+				"make disasm",
+				shell = True,
+				cwd = self.get_path(),
+				encoding = "UTF8",
+				capture_output = True
+			)
+
+		# build the disassembly
+		if cp.returncode == 0:
+			return Disassembly(cp.stdout)
+		else:
+			raise bass.DisassemblyException(cp.stderr.replace('\n', ' '))
 
 
 class User:

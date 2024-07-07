@@ -2,6 +2,38 @@
 
 import orchid as orc
 from bass.ace_editor import CodeEditor
+from bass.disasm import DisasmPane
+
+class DisasmTab(orc.Tab):
+	"""Tab containing disassembly."""
+
+	def __init__(self):
+		self.component = DisasmPane()
+		self.shown = False
+		self.disasm = None
+
+	def get_label(self):
+		return "Disassembly"
+
+	def get_component(self):
+		return self.component
+
+	def set_disasm(self, disasm):
+		if self.shown:
+			self.component.set_disasm(self.disasm)
+			self.disasm = None
+		else:
+			self.disasm = disasm
+
+	def on_show(self):
+		self.shown = True
+		if self.disasm is not None:
+			self.component.set_disasm(self.disasm)
+			self.disasm = None
+
+	def on_hide(self):
+		self.shown = False
+
 
 class MyTabEditor(orc.Tab):
 	"""ource file editor tab."""
@@ -59,6 +91,7 @@ class EditorPane(orc.TabbedPane):
 	def __init__(self):
 		orc.TabbedPane.__init__(self, [])
 		self.editors = []
+		self.disasm_tab = None
 
 	def clear(self):
 		"""Remove all opened tabs."""
@@ -93,3 +126,15 @@ class EditorPane(orc.TabbedPane):
 		"""Save all editors and then call function fun."""
 		self.save_next(fun)
 
+	def show_disasm(self, disasm):
+		"""Change the current disassembly."""
+		if self.disasm_tab is None:
+			self.disasm_tab = DisasmTab()
+			self.append(self.disasm_tab)
+		self.disasm_tab.set_disasm(disasm)
+		self.select(self.disasm_tab)
+
+	def update_pc(self, addr):
+		"""Update the display according to the current PC."""
+		if self.disasm_tab is not None:
+			self.disasm_tab.get_component().set_pc(addr)

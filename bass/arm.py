@@ -76,6 +76,10 @@ class Simulator(bass.Simulator):
 	def getRegister(self,i,j):
 		return arm.get_register(self.state, i, j)
 
+	def step(self):
+		assert self.sim is not None
+		arm.step(self.sim)
+
 	def stepInto(self):
 		inst= arm.next_inst(self.sim)
 		print("instruction :", inst)
@@ -118,7 +122,9 @@ class Simulator(bass.Simulator):
 	def getState(self):
 		return self.state
 
-
+	def get_pc(self):
+		assert self.sim is not None
+		return arm.next_addr(self.sim)
 
 def load(path):
 	return Simulator(path)
