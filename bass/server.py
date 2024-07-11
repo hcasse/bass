@@ -42,8 +42,8 @@ class Session(orc.Session):
 		self.sim = None
 		self.perform_start = False
 		self.currentProject = None
-		self.R = None
-		self.Ri = None
+		#self.R = None
+		#self.Ri = None
 
 		# variables
 		self.compiled = orc.Var(False)
@@ -71,10 +71,10 @@ class Session(orc.Session):
 			icon=orc.Icon("reset"), help="Reset the simulation.")
 
 		# UI
+		self.panes = []
 		self.page = None
 		self.editor_pane = None
 		self.memory_pane = None
-		self.register_pane = None
 		self.user_label = None
 		self.project_label = None
 		self.console = None
@@ -96,6 +96,8 @@ class Session(orc.Session):
 		"""Udpdate the display according to the current simulator state."""
 		pc = self.sim.get_pc()
 		self.editor_pane.update_pc(pc)
+		for pane in self.panes:
+			pane.on_sim_update(self, self.sim)
 
 	def start_sim(self):
 		"""Start the simulation."""
@@ -109,17 +111,27 @@ class Session(orc.Session):
 			# display the disassembly tab
 			disasm = self.get_project().get_disassembly()
 			self.editor_pane.show_disasm(disasm)
-			self.update_sim_display()
+			#self.update_sim_display()
+
+			# update panes
+			for pane in self.panes:
+				pane.on_sim_start(self, self.sim)
 
 		except bass.SimException as e:
 			self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
 
 	def stop_sim(self):
 		"""Stop the current simulation."""
+
+		# stop the simulator
 		self.sim.release()
 		self.sim = None
 		self.started.set(False)
 		self.console.append(orc.text(orc.INFO, "Stop simulation."))
+
+		# update panes
+		for pane in self.panes:
+			pane.on_sim_stop(self, self.sim)
 
 	def playstop(self, interface):
 		if self.sim is not None:
@@ -220,7 +232,8 @@ class Session(orc.Session):
 		# generate the page
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
 		self.memory_pane = orc.Console(init = "Memory")
-		self.register_pane = RegisterPane()
+		register_pane = RegisterPane()
+		self.panes.append(register_pane)
 		self.editor_pane = EditorPane()
 		editor_group = orc.HGroup([
 			self.editor_pane,
@@ -251,7 +264,7 @@ class Session(orc.Session):
 					orc.Button(orc.Icon("about"), on_click=self.about)
 				]),
 				orc.HGroup([
-					self.register_pane,
+					register_pane,
 					orc.VGroup([
 						editor_group,
 						self.console
@@ -260,9 +273,6 @@ class Session(orc.Session):
 			]),
 			app = self.get_application()
 		)
-
-		# reset UI
-		self.register_pane.init()
 
 		# prepare dialogs
 		self.login_dialog = LoginDialog(self, self.page)
@@ -314,6 +324,10 @@ class Session(orc.Session):
 		self.editor_pane.clear()
 		for file in self.project.get_sources():
 			self.editor_pane.open_source(file)
+
+		# setup other panes
+		for pane in self.panes:
+			pane.on_project_set(self, project)
 
 	def setup_user(self, user):
 		"""Set the user in the main window."""

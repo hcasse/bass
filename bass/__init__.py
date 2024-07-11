@@ -18,6 +18,49 @@ class SimException(MessageException):
 		MessageException.__init__(self, msg)
 
 
+class Register:
+	"""Represents a register in the simulator."""
+
+	def __init__(self, name):
+		self.name = name
+
+	def get_name(self):
+		"""Get the register name."""
+		return self.name
+
+	def format(self, value):
+		"""Get formatted value of the register for human display."""
+		return str(value)
+
+
+class RegisterBank:
+	"""Represents a register bank."""
+
+	def __init__(self, name, regs):
+		self.name = name
+		self.regs = regs
+
+	def get_name(self):
+		"""Get the name of the register bank."""
+		return self.name
+
+	def get_registers(self):
+		"""Get the registers of the register bank."""
+		return self.regs
+
+
+class Arch:
+	"""Representation of an architecture."""
+
+	def get_name(self):
+		"""Get the name of the architecture."""
+		return "<no name>"
+
+	def get_registers(self):
+		"""Get the list of register banks."""
+		return []
+
+
 class Simulator:
 	"""Interface to the simulator."""
 
@@ -46,6 +89,18 @@ class Simulator:
 		"""Execute the current instruction and stop."""
 		pass
 
+	def get_register(self, reg):
+		"""Get the value of a register."""
+		return None
+
+	def set_register(self, reg, value):
+		"""Set the value of a register."""
+		pass
+
+	def get_arch(self):
+		"""Get the architecture of the simulator."""
+		return None
+
 
 class DisassemblyException(MessageException):
 
@@ -65,3 +120,22 @@ class Disassembly:
 		"""Find a label and return its address. Return None if the label cannot
 		be found."""
 		return None
+
+class ApplicationPane:
+	"""Interface shared by all components of the application."""
+
+	def on_project_set(self, app, project):
+		"""Called when the project is changed."""
+		pass
+
+	def on_sim_start(self, app, sim):
+		"""Called when the simulator is started."""
+		pass
+
+	def on_sim_stop(self, app, sim):
+		"""Called just before the simulator is deleted."""
+		pass
+
+	def on_sim_update(self, app, sim):
+		"""Called each time the simulator state needs to be updated."""
+		pass

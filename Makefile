@@ -1,6 +1,7 @@
 
 # Configuration
 PYTHON=python3
+PYLINT=pylint
 
 # GIT repositories
 ORCHID_GIT = https://github.com/hcasse/Orchid.git
@@ -22,6 +23,9 @@ debug:
 
 test:
 	$(PYTHON) -m bass.test
+
+check:
+	$(PYLINT) bass | less
 
 autodoc:
 	export PYTHONPATH=$(PWD):$(PWD)/Orchid; \

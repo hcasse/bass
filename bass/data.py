@@ -318,6 +318,10 @@ class Project:
 		else:
 			raise bass.DisassemblyException(cp.stderr.replace('\n', ' '))
 
+	def get_arch(self):
+		"""Get the architecture used in this project."""
+		return arm.Simulator.get_arch()
+
 
 class User:
 	"""A user."""
@@ -387,4 +391,3 @@ class User:
 		except DataException as e:
 			shutil.rmtree(self.path)
 			error(self.app, str(e))
-
