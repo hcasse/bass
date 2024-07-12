@@ -30,8 +30,58 @@ class Register(bass.Register):
 		self.index = index
 
 
+class AddrRegister(Register):
+	"""Register containing an address."""
+
+	def __init__(self, name, bank, index):
+		Register.__init__(self, name, bank, index)
+
+	def format(self, val):
+		return f"{val:08x}"
+
+
+class CPSRegister(Register):
+	"""Register containing CPSR."""
+
+	MODES = {
+		0b0000: "User",
+		0b0001: "FIQ",
+		0b0010:	"IRQ",
+		0b0011: "Super",
+		0b0110: "Monit",
+		0b0111: "Abort",
+		0b1010: "Hyper",
+		0b1011: "Undef",
+		0b1111: "Sys"
+	}
+
+	def __init__(self, name, bank, index):
+		Register.__init__(self, name, bank, index)
+
+	def format(self, val):
+		N = "N" if (val >> 31) & 1 else "-"
+		Z = "Z" if (val >> 30) & 1 else "-"
+		C = "C" if (val >> 29) & 1 else "-"
+		V = "V" if (val >> 28) & 1 else "-"
+		E = "E" if (val >> 9) & 1 else "-"
+		A = "A" if (val >> 8) & 1 else "-"
+		I = "I" if (val >> 7) & 1 else "-"
+		F = "F" if (val >> 6) & 1 else "-"
+		try:
+			M = self.MODES[val & 0xf]
+		except KeyError:
+			M = "Invalid"
+		return f"{N}{Z}{C}{V} {E}{A}{I}{F} {M}"
+
+
 class Arch(bass.Arch):
 	"""Architecture representation for ARM."""
+
+	NAMES = {
+		13: "SP",
+		14: "LR",
+		15: "PC"
+	}
 
 	def __init__(self):
 		self.regs = None
@@ -48,13 +98,19 @@ class Arch(bass.Arch):
 			for i in range(count):
 				(name, fmt, rcount, _, _) = arm.get_register_bank(i)
 				if rcount == 1:
-					regs = [Register(name, i, 0)]
+					if name == "CPSR":
+						regs = [CPSRegister(name, i, 0)]
+					else:
+						regs = [Register(name, i, 0)]
 				else:
 					regs = []
 					for j in range(rcount):
-						regs.append(Register(fmt % j, i, j))
+						if name == "R" and j >= 13:
+							reg = AddrRegister(self.NAMES[j], i, j)
+						else:
+							reg = Register(fmt % j, i, j)
+						regs.append(reg)
 				bank = bass.RegisterBank(name, regs)
-				#print(f"DEBUG: [{name}]")
 				if name == "R":
 					R = bank
 				elif name == "CPSR":

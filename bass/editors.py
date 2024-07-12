@@ -3,6 +3,7 @@
 import orchid as orc
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
+from bass import ApplicationPane
 
 class DisasmTab(orc.Tab):
 	"""Tab containing disassembly."""
@@ -10,7 +11,7 @@ class DisasmTab(orc.Tab):
 	def __init__(self):
 		self.component = DisasmPane()
 		self.shown = False
-		self.disasm = None
+		self.to_disasm = None
 
 	def get_label(self):
 		return "Disassembly"
@@ -20,16 +21,16 @@ class DisasmTab(orc.Tab):
 
 	def set_disasm(self, disasm):
 		if self.shown:
-			self.component.set_disasm(self.disasm)
-			self.disasm = None
+			self.component.set_disasm(disasm)
+			self.to_disasm = None
 		else:
-			self.disasm = disasm
+			self.to_disasm = disasm
 
 	def on_show(self):
 		self.shown = True
-		if self.disasm is not None:
-			self.component.set_disasm(self.disasm)
-			self.disasm = None
+		if self.to_disasm is not None:
+			self.component.set_disasm(self.to_disasm)
+			self.to_disasm = None
 
 	def on_hide(self):
 		self.shown = False
@@ -86,7 +87,7 @@ class MyTabConsole(orc.Tab):
 		print("Released", self.label)
 
 
-class EditorPane(orc.TabbedPane):
+class EditorPane(orc.TabbedPane, ApplicationPane):
 
 	def __init__(self):
 		orc.TabbedPane.__init__(self, [])
@@ -109,6 +110,10 @@ class EditorPane(orc.TabbedPane):
 		self.append(tab)
 		self.editors.append(tab)
 
+	def on_project_set(self, app, project):
+		self.clear()
+		for file in project.get_sources():
+			self.open_source(file)
 
 	def save_next(self, fun, n=-1, editor=None, content=None):
 		"""Iterate for saving all editors."""
@@ -126,11 +131,15 @@ class EditorPane(orc.TabbedPane):
 		"""Save all editors and then call function fun."""
 		self.save_next(fun)
 
+	def on_compile(self, session, on_ready):
+		self.save_all(on_ready)
+
 	def show_disasm(self, disasm):
 		"""Change the current disassembly."""
 		if self.disasm_tab is None:
 			self.disasm_tab = DisasmTab()
 			self.append(self.disasm_tab)
+		print("DEBUG: editors disasm =", disasm)
 		self.disasm_tab.set_disasm(disasm)
 		self.select(self.disasm_tab)
 
@@ -138,3 +147,13 @@ class EditorPane(orc.TabbedPane):
 		"""Update the display according to the current PC."""
 		if self.disasm_tab is not None:
 			self.disasm_tab.get_component().set_pc(addr)
+
+	def on_sim_start(self, app, sim):
+		disasm = app.get_project().get_disassembly()
+		print("DEBUG: disasm =", disasm)
+		self.show_disasm(disasm)
+		self.on_sim_update(app, sim)
+
+	def on_sim_update(self, app, sim):
+		pc = sim.get_pc()
+		self.update_pc(pc)

@@ -75,6 +75,7 @@ table.disasm tr th {
 
 	def set_disasm(self, disasm):
 		"""Change the displayed disassembly."""
+		print("DEBUG: DisasmTab disasm =", disasm)
 		self.disasm = disasm
 		if self.online():
 			buf = Buffer()

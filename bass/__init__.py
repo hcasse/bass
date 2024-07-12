@@ -101,6 +101,10 @@ class Simulator:
 		"""Get the architecture of the simulator."""
 		return None
 
+	def get_frequency(self):
+		"""Get the frequency of the simulator in Hz."""
+		return 100
+
 
 class DisassemblyException(MessageException):
 
@@ -139,3 +143,9 @@ class ApplicationPane:
 	def on_sim_update(self, app, sim):
 		"""Called each time the simulator state needs to be updated."""
 		pass
+
+	def on_compile(self, session, on_ready):
+		"""Call to prepare for compilation. Each pane call on_ready() when it
+		is ready. This allows to support asynchronous for editor saving.
+		Default implementation just call on_ready."""
+		on_ready()

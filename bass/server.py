@@ -32,48 +32,46 @@ DEBUG_PROJECT = None
 class Session(orc.Session):
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
+
+		# get configuration
+		self.sim_freq = app.get_config("sim_freq", 5)
+
+		# application state
 		self.user = None
 		self.project = None
-
-		#if self.project.files != []:
-		#	self.file = self.project.files[0]
-		#else:
-		self.file = None
 		self.sim = None
-		self.perform_start = False
-		self.currentProject = None
-		#self.R = None
-		#self.Ri = None
-
-		# variables
 		self.compiled = orc.Var(False)
 		self.started = orc.Var(False)
 		self.running = orc.Var(False)
+		self.ready_count = 0
+		self.quantum = None
 
 		# compilation and simulation actions
+		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
+		self.stop_icon = orc.Icon(orc.IconType.STOP, color="red")
 		self.compile_action = orc.Action(self.compile,
-			icon=orc.Icon("check"), help="Compile the project.")
+			icon=orc.Icon(orc.IconType.CHECK), help="Compile the project.")
 		self.playstop_action = orc.Action(self.playstop, enable=self.compiled,
-			icon=orc.Icon("play", color="green"), help="Play/stop the simulation.")
+			icon=self.start_icon,
+			help="Play/stop the simulation.")
 		paused = self.started & orc.not_(self.running)
 		self.step_action = orc.Action(self.step, enable=paused,
-			icon=orc.Icon("braces"), help="Execute one instruction.")
+			icon=orc.Icon(orc.IconType.BRACES), help="Execute one instruction.")
 		self.step_over_action = orc.Action(self.step_over, enable=paused,
 			icon=orc.Icon("!braces-asterisk"),
 			help="Execution one instruction passing over subprogram call.")
 		self.run_to_action = orc.Action(self.run_to, enable=paused,
-			icon=orc.Icon("fast-forward"), help="Run to current position.")
+			icon=orc.Icon(orc.IconType.FAST_FORWARD), help="Run to current position.")
 		self.go_on_action = orc.Action(self.go_on, enable=paused,
-			icon=orc.Icon("skip-forward"), help="Go on execution.")
+			icon=orc.Icon(orc.IconType.SKIP_FORWARD), help="Go on execution.")
 		self.pause_action = orc.Action(self.pause, enable=self.running,
-			icon=orc.Icon("pause"), help="Pause the execution")
+			icon=orc.Icon(orc.IconType.PAUSE), help="Pause the execution")
 		self.reset_action = orc.Action(self.reset, enable=paused,
-			icon=orc.Icon("reset"), help="Reset the simulation.")
+			icon=orc.Icon(orc.IconType.RESET), help="Reset the simulation.")
 
 		# UI
 		self.panes = []
 		self.page = None
-		self.editor_pane = None
 		self.memory_pane = None
 		self.user_label = None
 		self.project_label = None
@@ -94,31 +92,24 @@ class Session(orc.Session):
 
 	def update_sim_display(self):
 		"""Udpdate the display according to the current simulator state."""
-		pc = self.sim.get_pc()
-		self.editor_pane.update_pc(pc)
 		for pane in self.panes:
 			pane.on_sim_update(self, self.sim)
 
 	def start_sim(self):
 		"""Start the simulation."""
-		try:
 
-			# start the simulator
+		# start the simulator
+		try:
 			self.sim = self.get_project().new_sim()
+			self.quantum = self.sim.get_frequency() / self.sim_freq
 			self.started.set(True)
 			self.console.append(orc.text(orc.INFO, "Start simulation."))
-
-			# display the disassembly tab
-			disasm = self.get_project().get_disassembly()
-			self.editor_pane.show_disasm(disasm)
-			#self.update_sim_display()
-
-			# update panes
-			for pane in self.panes:
-				pane.on_sim_start(self, self.sim)
-
 		except bass.SimException as e:
 			self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
+
+		# update panes
+		for pane in self.panes:
+			pane.on_sim_start(self, self.sim)
 
 	def stop_sim(self):
 		"""Stop the current simulation."""
@@ -135,8 +126,10 @@ class Session(orc.Session):
 
 	def playstop(self, interface):
 		if self.sim is not None:
+			self.playstop_action.set_icon(self.start_icon)
 			self.stop_sim()
 		else:
+			self.playstop_action.set_icon(self.stop_icon)
 			self.start_sim()
 
 	def step(self, interface):
@@ -162,7 +155,15 @@ class Session(orc.Session):
 		pass
 
 	def compile(self, n=-1, editor=None, content=None):
-		self.editor_pane.save_all(self.then_compile)
+		self.ready_count = len(self.panes)
+		for pane in self.panes:
+			pane.on_compile(self, self.on_ready)
+
+	def on_ready(self):
+		"""Wait for all pane to be ready to compile."""
+		self.ready_count -= 1
+		if self.ready_count == 0:
+			self.then_compile()
 
 	def then_compile(self):
 		self.console.clear()
@@ -234,9 +235,10 @@ class Session(orc.Session):
 		self.memory_pane = orc.Console(init = "Memory")
 		register_pane = RegisterPane()
 		self.panes.append(register_pane)
-		self.editor_pane = EditorPane()
+		editor_pane = EditorPane()
+		self.panes.append(editor_pane)
 		editor_group = orc.HGroup([
-			self.editor_pane,
+			editor_pane,
 			self.memory_pane
 		])
 		editor_group.weight = 3
@@ -244,9 +246,9 @@ class Session(orc.Session):
 		self.page = orc.Page(
 			orc.VGroup([
 				orc.Header("BASS", [
-					orc.Button(image = orc.Icon("box")),
+					orc.Button(image = orc.Icon(orc.IconType.PROJECT)),
 					self.project_label,
-					orc.Button(image = orc.Icon("person"), on_click=self.edit_user),
+					orc.Button(image = orc.Icon(orc.IconType.PERSON), on_click=self.edit_user),
 					self.user_label,
 				]),
 				orc.ToolBar([
@@ -260,8 +262,8 @@ class Session(orc.Session):
 					orc.Button(self.pause_action),
 					orc.Button(self.reset_action),
 					orc.Spring(hexpand = True),
-					orc.Button(orc.Icon("help"), on_click=self.help),
-					orc.Button(orc.Icon("about"), on_click=self.about)
+					orc.Button(orc.Icon(orc.IconType.HELP), on_click=self.help),
+					orc.Button(orc.Icon(orc.IconType.ABOUT), on_click=self.about)
 				]),
 				orc.HGroup([
 					register_pane,
@@ -319,11 +321,6 @@ class Session(orc.Session):
 		# display project
 		self.project = project
 		self.project_label.set_text(project.get_name())
-
-		# setup editors
-		self.editor_pane.clear()
-		for file in self.project.get_sources():
-			self.editor_pane.open_source(file)
 
 		# setup other panes
 		for pane in self.panes:
@@ -531,6 +528,7 @@ class Application(orc.Application):
 		return user in self.passwords
 
 if __name__ == '__main__':
+
 	# parse arguments
 	parser = argparse.ArgumentParser(prog="bass", description="BASS server")
 	parser.add_argument('--debug', action='store_true', help='enable debugging')
