@@ -137,6 +137,7 @@ class Simulator(bass.Simulator):
 		self.sim = None
 		self.mem = None
 		self.banks =  None
+		self.date = 0
 
 		# load the executable
 		self.pf = arm.new_platform()
@@ -183,6 +184,7 @@ class Simulator(bass.Simulator):
 	def step(self):
 		assert self.sim is not None
 		arm.step(self.sim)
+		self.date += 1
 
 	def stepInto(self):
 		inst= arm.next_inst(self.sim)
@@ -210,16 +212,6 @@ class Simulator(bass.Simulator):
 			self.mem = arm.get_memory(self.pf,0)
 		return self.mem
 
-	def getRegisterBanks(self):
-		#R = None
-		Ri = None
-		for i in range(0, arm.count_register_banks()):
-			bank = arm.get_register_bank(i)
-			if bank[0] == 'R':
-				#R = bank
-				Ri = i
-		return Ri
-
 	def getStateMemory(self):
 		return arm.get_state_memory(self.state)
 
@@ -237,6 +229,9 @@ class Simulator(bass.Simulator):
 	def set_register(self, reg, value):
 		assert self.state is not None
 		arm.set_register(self.state, reg.bank, reg.index, value)
+
+	def get_date(self):
+		return self.date
 
 	@staticmethod
 	def get_arch():

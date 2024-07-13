@@ -9,6 +9,7 @@ import os
 import os.path
 import re
 import sys
+import time
 
 import bass
 import Orchid.orchid as orc
@@ -44,7 +45,8 @@ class Session(orc.Session):
 		self.started = orc.Var(False)
 		self.running = orc.Var(False)
 		self.ready_count = 0
-		self.quantum = None
+		self.quantum_inst = None
+		self.quantum_period = 1000 / self.sim_freq
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -76,6 +78,7 @@ class Session(orc.Session):
 		self.user_label = None
 		self.project_label = None
 		self.console = None
+		self.sim_timer = None
 
 		# dialog
 		self.login_dialog = None
@@ -95,17 +98,25 @@ class Session(orc.Session):
 		for pane in self.panes:
 			pane.on_sim_update(self, self.sim)
 
+	def execute_quantum(self):
+		timeout = time.time() + self.quantum_period / 1000
+		for i in range(self.quantum_inst):
+			self.sim.step()
+			if time.time() >= timeout:
+				break
+		self.update_sim_display()
+
 	def start_sim(self):
 		"""Start the simulation."""
 
 		# start the simulator
 		try:
 			self.sim = self.get_project().new_sim()
-			self.quantum = self.sim.get_frequency() / self.sim_freq
+			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
 			self.started.set(True)
 			self.console.append(orc.text(orc.INFO, "Start simulation."))
 		except bass.SimException as e:
-			self.console.append(orc.text(orc.ERROR, "ERROR:") + str(e))
+			self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
 
 		# update panes
 		for pane in self.panes:
@@ -146,15 +157,21 @@ class Session(orc.Session):
 		pass
 
 	def go_on(self, interface):
-		pass
+		"""Go on with the execution."""
+		self.running.set(True)
+		self.sim_timer.start()
 
 	def pause(self, inetrface):
-		pass
+		"""Pause the execution."""
+		self.sim_timer.stop()
+		self.running.set(False)
+		self.update_sim_display()
 
 	def reset(self, interface):
 		pass
 
 	def compile(self, n=-1, editor=None, content=None):
+		"""Start compilation action by saving all editors."""
 		self.ready_count = len(self.panes)
 		for pane in self.panes:
 			pane.on_compile(self, self.on_ready)
@@ -166,6 +183,7 @@ class Session(orc.Session):
 			self.then_compile()
 
 	def then_compile(self):
+		"""Whan all is saved, finally perform the compilation."""
 		self.console.clear()
 		self.console.append("<b>Compiling...</b>")
 		(result, output, error) = self.project.compile()
@@ -275,6 +293,9 @@ class Session(orc.Session):
 			]),
 			app = self.get_application()
 		)
+		print("DEBUG: quantum_period =", self.quantum_period)
+		self.sim_timer = orc.Timer(self.page, self.execute_quantum,
+			period=self.quantum_period)
 
 		# prepare dialogs
 		self.login_dialog = LoginDialog(self, self.page)

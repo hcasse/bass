@@ -29,7 +29,8 @@ check:
 
 autodoc:
 	export PYTHONPATH=$(PWD):$(PWD)/Orchid; \
-	pydoc3 -b
+	gnome-terminal -- pydoc3 -b
+
 
 setup: git-orchid git-gliss git-armv5t
 

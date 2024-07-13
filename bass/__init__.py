@@ -105,6 +105,10 @@ class Simulator:
 		"""Get the frequency of the simulator in Hz."""
 		return 100
 
+	def get_date(self):
+		"""Get the date in cycles."""
+		return 0
+
 
 class DisassemblyException(MessageException):
 
