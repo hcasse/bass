@@ -36,8 +36,8 @@ class AddrRegister(Register):
 	def __init__(self, name, bank, index):
 		Register.__init__(self, name, bank, index)
 
-	def format(self, val):
-		return f"{val:08x}"
+	def format(self, value):
+		return f"{value:08x}"
 
 
 class CPSRegister(Register):
@@ -58,17 +58,17 @@ class CPSRegister(Register):
 	def __init__(self, name, bank, index):
 		Register.__init__(self, name, bank, index)
 
-	def format(self, val):
-		N = "N" if (val >> 31) & 1 else "-"
-		Z = "Z" if (val >> 30) & 1 else "-"
-		C = "C" if (val >> 29) & 1 else "-"
-		V = "V" if (val >> 28) & 1 else "-"
-		E = "E" if (val >> 9) & 1 else "-"
-		A = "A" if (val >> 8) & 1 else "-"
-		I = "I" if (val >> 7) & 1 else "-"
-		F = "F" if (val >> 6) & 1 else "-"
+	def format(self, value):
+		N = "N" if (value >> 31) & 1 else "-"
+		Z = "Z" if (value >> 30) & 1 else "-"
+		C = "C" if (value >> 29) & 1 else "-"
+		V = "V" if (value >> 28) & 1 else "-"
+		E = "E" if (value >> 9) & 1 else "-"
+		A = "A" if (value >> 8) & 1 else "-"
+		I = "I" if (value >> 7) & 1 else "-"
+		F = "F" if (value >> 6) & 1 else "-"
 		try:
-			M = self.MODES[val & 0xf]
+			M = self.MODES[value & 0xf]
 		except KeyError:
 			M = "Invalid"
 		return f"{N}{Z}{C}{V} {E}{A}{I}{F} {M}"

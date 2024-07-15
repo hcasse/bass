@@ -33,9 +33,10 @@ class DisplayRegister:
 class RegisterModel(TableModel):
 	"""Model to display the registers."""
 
-	def __init__(self, regs):
+	def __init__(self, regs, pane):
 		TableModel.__init__(self)
 		self.regs = regs
+		self.pane = pane
 
 	def get_column_count(self):
 		return 2
@@ -53,7 +54,7 @@ class RegisterModel(TableModel):
 			return self.regs[row].format()
 
 	def is_editable(self, row, col):
-		return col == 1 and self.sim is not None
+		return col == 1 and self.pane.sim is not None
 
 	def set_cell(self, row, col, val):
 		if col == 1:
@@ -86,6 +87,7 @@ table.register-pane tr td:nth-child(2) {
 		self.regs = None
 		self.add_class("register-pane")
 		self.changed = []
+		self.sim = None
 
 	def on_project_set(self, app, project):
 		"""Set the current architecture."""
@@ -96,7 +98,7 @@ table.register-pane tr td:nth-child(2) {
 				(b.get_registers() for b in arch.get_registers()),
 				start=[])
 			self.regs = [DisplayRegister(r) for r in regs]
-			self.set_table_model(RegisterModel(self.regs))
+			self.set_table_model(RegisterModel(self.regs, self))
 
 	def make_content(self):
 		"""Build the content of the component."""
@@ -120,10 +122,12 @@ table.register-pane tr td:nth-child(2) {
 		self.changed = changed
 
 	def on_sim_start(self, app, sim):
+		self.sim = sim
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
 			self.get_table_model().set_cell(row, 1, val)
 
 	def on_sim_stop(self, app, sim):
+		self.sim = None
 		for i in range(len(self.regs)):
 			self.get_table_model().set_cell(i, 1, None)

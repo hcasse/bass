@@ -47,6 +47,10 @@ class Session(orc.Session):
 		self.ready_count = 0
 		self.quantum_inst = None
 		self.quantum_period = 1000 / self.sim_freq
+		self.date = orc.Var(None, orc.Types.INT)
+		self.sim_timeout = orc.Var(False,
+			icon=orc.Icon(orc.IconType.STOPWATCH, color="green"))
+		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -79,6 +83,7 @@ class Session(orc.Session):
 		self.project_label = None
 		self.console = None
 		self.sim_timer = None
+		self.timeout_button = None
 
 		# dialog
 		self.login_dialog = None
@@ -97,13 +102,16 @@ class Session(orc.Session):
 		"""Udpdate the display according to the current simulator state."""
 		for pane in self.panes:
 			pane.on_sim_update(self, self.sim)
+		self.date.set(self.sim.get_date())
 
 	def execute_quantum(self):
 		timeout = time.time() + self.quantum_period / 1000
-		for i in range(self.quantum_inst):
+		for _ in range(self.quantum_inst):
 			self.sim.step()
 			if time.time() >= timeout:
+				self.sim_timeout.set(False)
 				break
+		self.sim_timeout.set(True)
 		self.update_sim_display()
 
 	def start_sim(self):
@@ -114,6 +122,8 @@ class Session(orc.Session):
 			self.sim = self.get_project().new_sim()
 			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
 			self.started.set(True)
+			self.timeout_button.enable()
+			self.date.set(0)
 			self.console.append(orc.text(orc.INFO, "Start simulation."))
 		except bass.SimException as e:
 			self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
@@ -125,11 +135,18 @@ class Session(orc.Session):
 	def stop_sim(self):
 		"""Stop the current simulation."""
 
+		# stop execution
+		if ~self.running:
+			self.pause(None)
+
 		# stop the simulator
 		self.sim.release()
 		self.sim = None
 		self.started.set(False)
 		self.console.append(orc.text(orc.INFO, "Stop simulation."))
+		self.timeout_button.disable()
+		self.date.set(None)
+		self.sim_timeout.set(False)
 
 		# update panes
 		for pane in self.panes:
@@ -159,12 +176,14 @@ class Session(orc.Session):
 	def go_on(self, interface):
 		"""Go on with the execution."""
 		self.running.set(True)
+		self.sim_timeout.set(True)
 		self.sim_timer.start()
 
-	def pause(self, inetrface):
+	def pause(self, interface):
 		"""Pause the execution."""
 		self.sim_timer.stop()
 		self.running.set(False)
+		self.sim_timeout.set(False)
 		self.update_sim_display()
 
 	def reset(self, interface):
@@ -261,6 +280,9 @@ class Session(orc.Session):
 		])
 		editor_group.weight = 3
 		self.console.weight = 1
+		self.timeout_button = orc.TwoStateButton(self.sim_timeout,
+			icon2=self.timeout_icon)
+		self.timeout_button.disable()
 		self.page = orc.Page(
 			orc.VGroup([
 				orc.Header("BASS", [
@@ -289,6 +311,11 @@ class Session(orc.Session):
 						editor_group,
 						self.console
 					])
+				]),
+				orc.StatusBar([
+					orc.hspring(),
+					orc.Field(self.date, read_only=True, place_holder="date"),
+					self.timeout_button
 				])
 			]),
 			app = self.get_application()
