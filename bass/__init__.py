@@ -132,19 +132,23 @@ class Disassembly:
 class ApplicationPane:
 	"""Interface shared by all components of the application."""
 
-	def on_project_set(self, app, project):
+	def on_begin(self, session):
+		"""Called when the session is started."""
+		pass
+
+	def on_project_set(self, session, project):
 		"""Called when the project is changed."""
 		pass
 
-	def on_sim_start(self, app, sim):
+	def on_sim_start(self, session, sim):
 		"""Called when the simulator is started."""
 		pass
 
-	def on_sim_stop(self, app, sim):
+	def on_sim_stop(self, session, sim):
 		"""Called just before the simulator is deleted."""
 		pass
 
-	def on_sim_update(self, app, sim):
+	def on_sim_update(self, session, sim):
 		"""Called each time the simulator state needs to be updated."""
 		pass
 
@@ -153,3 +157,7 @@ class ApplicationPane:
 		is ready. This allows to support asynchronous for editor saving.
 		Default implementation just call on_ready."""
 		on_ready()
+
+	def on_compile_done(self, session):
+		"""Called when the compilation is done."""
+		pass

@@ -11,15 +11,17 @@ import re
 import sys
 import time
 
-import bass
 import Orchid.orchid as orc
 from Orchid.orchid import popup
 from Orchid.orchid import dialog
 
+import bass
+from bass.ace_editor import CodeEditor
+from bass.disasm import DisasmPane
 from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
-from bass.editors import EditorPane
+#from bass.editors import EditorPane
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -51,6 +53,7 @@ class Session(orc.Session):
 		self.sim_timeout = orc.Var(False,
 			icon=orc.Icon(orc.IconType.STOPWATCH, color="green"))
 		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
+		self.breakpoints = {}
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -84,11 +87,16 @@ class Session(orc.Session):
 		self.console = None
 		self.sim_timer = None
 		self.timeout_button = None
+		self.editors = None
 
 		# dialog
 		self.login_dialog = None
 		self.register_dialog = None
 		self.select_dialog = None
+
+	def get_breakpoints(self):
+		"""Return the set of breakpoints."""
+		return self.breakpoints
 
 	def get_user(self):
 		"""Get the current user."""
@@ -120,13 +128,16 @@ class Session(orc.Session):
 		# start the simulator
 		try:
 			self.sim = self.get_project().new_sim()
-			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
-			self.started.set(True)
-			self.timeout_button.enable()
-			self.date.set(0)
-			self.console.append(orc.text(orc.INFO, "Start simulation."))
 		except bass.SimException as e:
 			self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
+			return
+
+		# prepare simulation
+		self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
+		self.started.set(True)
+		self.timeout_button.enable()
+		self.date.set(0)
+		self.console.append(orc.text(orc.INFO, "Start simulation."))
 
 		# update panes
 		for pane in self.panes:
@@ -199,6 +210,8 @@ class Session(orc.Session):
 		"""Wait for all pane to be ready to compile."""
 		self.ready_count -= 1
 		if self.ready_count == 0:
+			for pane in self.panes:
+				pane.on_compile_done(self)
 			self.then_compile()
 
 	def then_compile(self):
@@ -248,7 +261,6 @@ class Session(orc.Session):
 		"""Called to edit the buser."""
 		pass
 
-	#----------------menu button--------------------
 	def make_menu(self):
 		return popup.MenuButton(
 			popup.Menu([
@@ -257,7 +269,6 @@ class Session(orc.Session):
 				orc.Button("Nouveau fichier", on_click=self.menuNew)
 			])
 		)
-
 
 	def get_index(self):
 
@@ -272,10 +283,10 @@ class Session(orc.Session):
 		self.memory_pane = orc.Console(init = "Memory")
 		register_pane = RegisterPane()
 		self.panes.append(register_pane)
-		editor_pane = EditorPane()
-		self.panes.append(editor_pane)
+		self.editors = orc.TabbedPane()
+		#self.panes.append(editor_pane)
 		editor_group = orc.HGroup([
-			editor_pane,
+			self.editors,
 			self.memory_pane
 		])
 		editor_group.weight = 3
@@ -320,9 +331,12 @@ class Session(orc.Session):
 			]),
 			app = self.get_application()
 		)
-		print("DEBUG: quantum_period =", self.quantum_period)
 		self.sim_timer = orc.Timer(self.page, self.execute_quantum,
 			period=self.quantum_period)
+
+		# start session
+		for pane in self.panes:
+			pane.on_begin(self)
 
 		# prepare dialogs
 		self.login_dialog = LoginDialog(self, self.page)
@@ -370,7 +384,20 @@ class Session(orc.Session):
 		self.project = project
 		self.project_label.set_text(project.get_name())
 
-		# setup other panes
+		# setup editors
+		for tab in self.editors.tabs:
+			self.editors.remove(tab)
+		for file in project.get_sources():
+			editor = CodeEditor(text = file.load())
+			self.editors.append_tab(editor,	label=file.get_name())
+			self.panes.append(editor)
+			editor.on_begin(self)
+		disasm = DisasmPane()
+		self.editors.append_tab(disasm, label="Disassembly")
+		self.panes.append(disasm)
+		disasm.on_begin(self)
+
+		# setup panes
 		for pane in self.panes:
 			pane.on_project_set(self, project)
 

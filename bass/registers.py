@@ -89,7 +89,7 @@ table.register-pane tr td:nth-child(2) {
 		self.changed = []
 		self.sim = None
 
-	def on_project_set(self, app, project):
+	def on_project_set(self, session, project):
 		"""Set the current architecture."""
 		arch = project.get_arch()
 		if arch != self.arch:
@@ -107,7 +107,7 @@ table.register-pane tr td:nth-child(2) {
 	def expands_vertical(self):
 		return True
 
-	def on_sim_update(self, app, sim):
+	def on_sim_update(self, session, sim):
 		changed = []
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
@@ -121,13 +121,13 @@ table.register-pane tr td:nth-child(2) {
 					self.remove_row_class(row, "error-text")
 		self.changed = changed
 
-	def on_sim_start(self, app, sim):
+	def on_sim_start(self, session, sim):
 		self.sim = sim
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
 			self.get_table_model().set_cell(row, 1, val)
 
-	def on_sim_stop(self, app, sim):
+	def on_sim_stop(self, session, sim):
 		self.sim = None
 		for i in range(len(self.regs)):
 			self.get_table_model().set_cell(i, 1, None)

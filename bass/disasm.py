@@ -2,8 +2,9 @@
 
 import orchid as orc
 from orchid.util import Buffer
+import bass
 
-class DisasmPane(orc.Component):
+class DisasmPane(orc.Component, bass.ApplicationPane):
 	"""Display disassembly code."""
 
 	MODEL = orc.Model(
@@ -20,6 +21,11 @@ table.disasm tr td {
 	padding-right: 8px;
 	font-family: monospace;
 }
+
+table.disasm tr td:nth-child(1) {
+	min-width: 1.2em;
+}
+
 
 table.disasm tr th {
 	text-align: left;
@@ -40,9 +46,14 @@ table.disasm tr th {
 
 	def __init__(self):
 		orc.Component.__init__(self, self.MODEL)
+
+		self.session = None
 		self.disasm = None
+		self.sim = None
+		self.update_disasm = False
 		self.map = None
 		self.pc_row = None
+
 		self.add_class('text-back')
 		self.add_class('disasm')
 
@@ -64,18 +75,26 @@ table.disasm tr th {
 		if self.disasm is None:
 			out.write("<tr><td>Nothing to display.</td></tr>")
 		else:
+			bps = self.session.get_breakpoints()
 			self.map = {}
 			out.write(f'<tbody id="{self.get_id()}-body">')
-			out.write("<tr><th>Address</th><th>Code</th><th>Instruction</th></tr>")
+			out.write("<tr><th></th><th>Address</th><th>Code</th><th>Instruction</th></tr>")
 			for i, (addr, bytes, inst) in enumerate(self.disasm.get_code()):
-				out.write(f"<tr><td>{addr:08x}</td><td>{bytes}</td><td>{inst}</td></tr>")
+				if addr in bps and bytes:
+					bp = ''
+				else:
+					bp = ' class="disasm-bp"'
+				out.write(f"<tr>\
+					<td{bp}></td>\
+					<td>{addr:08x}</td>\
+					<td>{bytes}</td>\
+					<td>{inst}</td></tr>")
 				if bytes:
 					self.map[addr] = i
 			out.write('</tbody>')
 
 	def set_disasm(self, disasm):
 		"""Change the displayed disassembly."""
-		print("DEBUG: DisasmTab disasm =", disasm)
 		self.disasm = disasm
 		if self.online():
 			buf = Buffer()
@@ -96,3 +115,40 @@ table.disasm tr th {
 			if self.pc_row is not None:
 				self.add_class('disasm-current',
 					id=f"{self.get_id()}-body", nth=self.pc_row)
+
+	def on_begin(self, session):
+		self.session = session
+
+	def on_compile_done(self, session):
+		print("DEBUG: disasm on_compile_don()")
+		self.disasm = None
+		self.update_disasm = True
+		if self.is_shown():
+			self.on_show()
+
+	def on_show(self):
+		print("DEBUG: disasm on_show()")
+		if self.update_disasm:
+			self.update_disasm = False
+			try:
+				self.set_disasm(self.session.get_project().get_disasm())
+			except bass.DisassemblyException:
+				self.disasm = None
+		if self.sim and self.disasm:
+			self.set_pc(self.sim.get_pc())
+
+	def on_sim_start(self, session, sim):
+		self.sim = sim
+		if self.is_shown() and self.disasm:
+			self.set_pc(sim.get_pc())
+
+	def on_sim_stop(self, session, sim):
+		self.sim = None
+		self.set_pc(None)
+
+	def on_sim_update(self, session, sim):
+		if self.is_shown() and self.disasm:
+			self.set_pc(sim.get_pc())
+
+
+

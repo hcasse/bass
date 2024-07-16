@@ -186,6 +186,7 @@ class Project:
 		self.files = None
 		self.template = template
 		self.path = None
+		self.disasm = None
 
 	def get_name(self):
 		"""Get the name of the project."""
@@ -286,6 +287,7 @@ class Project:
 
 	def compile(self):
 		"""Compile the project. Return a triple (command result, output text, error text)."""
+		self.disasm = None
 		cp = subprocess.run(
 				"make",
 				shell = True,
@@ -300,23 +302,27 @@ class Project:
 		Return the simulator. If there is an error, raises a SimException."""
 		return arm.Simulator(self.get_exec_path())
 
-	def get_disassembly(self):
+	def get_disasm(self):
 		"""Get the disassembly of the current program."""
 
-		# get information
-		cp = subprocess.run(
-				"make disasm",
-				shell = True,
-				cwd = self.get_path(),
-				encoding = "UTF8",
-				capture_output = True
-			)
+		if self.disasm is None:
 
-		# build the disassembly
-		if cp.returncode == 0:
-			return Disassembly(cp.stdout)
-		else:
-			raise bass.DisassemblyException(cp.stderr.replace('\n', ' '))
+			# get information
+			cp = subprocess.run(
+					"make disasm",
+					shell = True,
+					cwd = self.get_path(),
+					encoding = "UTF8",
+					capture_output = True
+				)
+
+			# build the disassembly
+			if cp.returncode == 0:
+				self.disasm = Disassembly(cp.stdout)
+			else:
+				raise bass.DisassemblyException(cp.stderr.replace('\n', ' '))
+
+		return self.disasm
 
 	def get_arch(self):
 		"""Get the architecture used in this project."""

@@ -7,6 +7,7 @@
 # https://ace.c9.io/#nav=embedding
 
 from orchid import Component, Model
+import bass
 
 MODEL = Model(
 	"base.editor",
@@ -43,7 +44,7 @@ function ace_set(msg) {
 """
 )
 
-class CodeEditor(Component):
+class CodeEditor(Component, bass.ApplicationPane):
 
 	def __init__(self, text = ""):
 		Component.__init__(self, model=MODEL)
