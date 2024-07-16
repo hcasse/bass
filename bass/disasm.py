@@ -4,7 +4,7 @@ import orchid as orc
 from orchid.util import Buffer
 import bass
 
-class DisasmPane(orc.Component, bass.ApplicationPane):
+class DisasmPane(orc.Component, bass.ApplicationPane, orc.SetObserver):
 	"""Display disassembly code."""
 
 	MODEL = orc.Model(
@@ -14,6 +14,8 @@ table.disasm {
 	overflow: auto;
 	border: 0;
 	border-collapse: collapse;
+	cursor: grab;
+	user-select: none;
 }
 
 table.disasm tr td {
@@ -23,9 +25,18 @@ table.disasm tr td {
 }
 
 table.disasm tr td:nth-child(1) {
-	min-width: 1.2em;
+	min-width: 8px;
 }
 
+table.disasm tr td:nth-child(2) {
+	padding-left: 4px: ;
+}
+
+table.disasm tr.disasm-bp td:nth-child(1) {
+	background-color: red;
+	border-radius: 12px;
+	padding-right: 0;
+}
 
 table.disasm tr th {
 	text-align: left;
@@ -41,8 +52,25 @@ table.disasm tr th {
 .disasm-selected {
 	background: lightblue;
 }
+""",
+	script = """
+function disasm_double_click(disasm, event) {
+	console.log("DEBUG: disasm = " + disasm + ", event = " + event);
+	console.log("DEBUG: target = " + event.target);
+	var item = event.target;
+	if(item.tagName == "TD")
+		item = item.parentNode;
+	console.log("DEBUG: item: " + item.tagName + ": " + item);
+	if(item.tagName != "TR")
+		return;
+	let i = ui_index(item);
+	console.log("i = " + i);
+	if(i > 0)
+		ui_send({id: disasm.id, action: "bp", index: i-1 });
+}
 """
 )
+	BREAKPOINT = "disasm-bp"
 
 	def __init__(self):
 		orc.Component.__init__(self, self.MODEL)
@@ -51,11 +79,13 @@ table.disasm tr th {
 		self.disasm = None
 		self.sim = None
 		self.update_disasm = False
-		self.map = None
+		self.map = None				# address -> index
 		self.pc_row = None
+		self.breakpoints = None
 
 		self.add_class('text-back')
 		self.add_class('disasm')
+		self.set_attr("ondblclick", "disasm_double_click(this, event);")
 
 	def gen(self, out):
 		out.write("<table ")
@@ -81,11 +111,11 @@ table.disasm tr th {
 			out.write("<tr><th></th><th>Address</th><th>Code</th><th>Instruction</th></tr>")
 			for i, (addr, bytes, inst) in enumerate(self.disasm.get_code()):
 				if addr in bps and bytes:
-					bp = ''
+					bp = f' class="{self.BREAKPOINT}"'
 				else:
-					bp = ' class="disasm-bp"'
-				out.write(f"<tr>\
-					<td{bp}></td>\
+					bp = ''
+				out.write(f"<tr{bp}>\
+					<td></td>\
 					<td>{addr:08x}</td>\
 					<td>{bytes}</td>\
 					<td>{inst}</td></tr>")
@@ -118,16 +148,15 @@ table.disasm tr th {
 
 	def on_begin(self, session):
 		self.session = session
+		session.get_breakpoints().add_observer(self)
 
 	def on_compile_done(self, session):
-		print("DEBUG: disasm on_compile_don()")
 		self.disasm = None
 		self.update_disasm = True
 		if self.is_shown():
 			self.on_show()
 
 	def on_show(self):
-		print("DEBUG: disasm on_show()")
 		if self.update_disasm:
 			self.update_disasm = False
 			try:
@@ -136,6 +165,20 @@ table.disasm tr th {
 				self.disasm = None
 		if self.sim and self.disasm:
 			self.set_pc(self.sim.get_pc())
+
+	def enable_breakpoint(self, addr):
+		try:
+			i = self.map[addr]
+			self.add_class(self.BREAKPOINT, f"{self.get_id()}-body", nth=i+1)
+		except KeyError:
+			pass
+
+	def disable_breakpoint(self, addr):
+		try:
+			i = self.map[addr]
+			self.remove_class(self.BREAKPOINT, f"{self.get_id()}-body", nth=i+1)
+		except KeyError:
+			pass
 
 	def on_sim_start(self, session, sim):
 		self.sim = sim
@@ -149,6 +192,32 @@ table.disasm tr th {
 	def on_sim_update(self, session, sim):
 		if self.is_shown() and self.disasm:
 			self.set_pc(sim.get_pc())
+
+	def on_add(self, set, item):
+		print("DEBUG: on add", item)
+		if self.disasm:
+			self.enable_breakpoint(item)
+
+	def on_remove(self, set, item):
+		print("DEBUG: on remove", item)
+		if self.disasm:
+			self.disable_breakpoint(item)
+
+	def on_clear(self, set):
+		for bp in ~set:
+			self.on_remove(set, bp)
+
+	def receive(self, msg, handle):
+		if msg["action"] == "bp":
+			addr = self.disasm.get_code()[msg["index"]][0]
+			if addr not in self.session.get_breakpoints():
+				self.session.get_breakpoints().add(addr)
+				print("DEBUG: add", addr)
+			else:
+				self.session.get_breakpoints().remove(addr)
+				print("DEBUG: remove", addr)
+		else:
+			orc.Component(self, msg, handle)
 
 
 

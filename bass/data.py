@@ -345,7 +345,6 @@ class User:
 	def get_path(self):
 		"""Get the directory of the user."""
 		if self.path is None:
-			print("DEBUG: user name =", self.name)
 			self.path = os.path.join(self.app.get_data_dir(), self.name)
 		return self.path
 
@@ -375,7 +374,6 @@ class User:
 		for name in config.get("user", "projects").split(";"):
 			if name != "":
 				self.add_project(Project(self, name))
-				print("DEBUG: add project", name)
 
 	def save(self):
 		"""Save the user file."""

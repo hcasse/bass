@@ -21,7 +21,6 @@ from bass.disasm import DisasmPane
 from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
-#from bass.editors import EditorPane
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -53,7 +52,7 @@ class Session(orc.Session):
 		self.sim_timeout = orc.Var(False,
 			icon=orc.Icon(orc.IconType.STOPWATCH, color="green"))
 		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
-		self.breakpoints = {}
+		self.breakpoints = orc.SetVar(set(), item_type=int)
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -88,6 +87,7 @@ class Session(orc.Session):
 		self.sim_timer = None
 		self.timeout_button = None
 		self.editors = None
+		self.disasm = None
 
 		# dialog
 		self.login_dialog = None
@@ -95,7 +95,7 @@ class Session(orc.Session):
 		self.select_dialog = None
 
 	def get_breakpoints(self):
-		"""Return the set of breakpoints."""
+		"""Return the variable containing the set of breakpoints."""
 		return self.breakpoints
 
 	def get_user(self):
@@ -119,7 +119,17 @@ class Session(orc.Session):
 			if time.time() >= timeout:
 				self.sim_timeout.set(False)
 				break
+			pc = self.sim.get_pc()
+			if pc in ~self.breakpoints:
+				self.complete_quantum()
+				return
 		self.sim_timeout.set(True)
+		self.update_sim_display()
+
+	def complete_quantum(self):
+		self.sim_timer.stop()
+		self.running.set(False)
+		self.sim_timeout.set(False)
 		self.update_sim_display()
 
 	def start_sim(self):
@@ -142,6 +152,7 @@ class Session(orc.Session):
 		# update panes
 		for pane in self.panes:
 			pane.on_sim_start(self, self.sim)
+		self.editors.select(self.disasm)
 
 	def stop_sim(self):
 		"""Stop the current simulation."""
@@ -192,10 +203,7 @@ class Session(orc.Session):
 
 	def pause(self, interface):
 		"""Pause the execution."""
-		self.sim_timer.stop()
-		self.running.set(False)
-		self.sim_timeout.set(False)
-		self.update_sim_display()
+		self.complete_quantum()
 
 	def reset(self, interface):
 		pass
@@ -210,8 +218,6 @@ class Session(orc.Session):
 		"""Wait for all pane to be ready to compile."""
 		self.ready_count -= 1
 		if self.ready_count == 0:
-			for pane in self.panes:
-				pane.on_compile_done(self)
 			self.then_compile()
 
 	def then_compile(self):
@@ -227,8 +233,22 @@ class Session(orc.Session):
 			self.console.append(orc.text(orc.FAILED, "FAILED..."))
 			self.compiled.set(False)
 		else:
+
+			# record success
 			self.console.append(orc.text(orc.SUCCESS, "SUCCESS!"))
 			self.compiled.set(True)
+
+			# alert panes
+			for pane in self.panes:
+				pane.on_compile_done(self)
+
+			# put default breakpoints
+			disasm = self.project.get_disasm()
+			for lab in ["main", "_exit"]:
+				addr = disasm.find_label(lab)
+				if addr is not None:
+					self.breakpoints.add(addr)
+
 
 	def print_line(self, line):
 		m = LINE_RE.match(line)
@@ -392,10 +412,10 @@ class Session(orc.Session):
 			self.editors.append_tab(editor,	label=file.get_name())
 			self.panes.append(editor)
 			editor.on_begin(self)
-		disasm = DisasmPane()
-		self.editors.append_tab(disasm, label="Disassembly")
-		self.panes.append(disasm)
-		disasm.on_begin(self)
+		self.disasm = DisasmPane()
+		self.editors.append_tab(self.disasm, label="Disassembly")
+		self.panes.append(self.disasm)
+		self.disasm.on_begin(self)
 
 		# setup panes
 		for pane in self.panes:
@@ -618,5 +638,4 @@ if __name__ == '__main__':
 
 	# run the server
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	print("DEBUG: assets =", assets)
-	orc.run(Application(), debug=DEBUG, dirs=[assets])
+	orc.run(Application(), dirs=[assets], debug=DEBUG)
