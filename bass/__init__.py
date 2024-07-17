@@ -113,6 +113,10 @@ class Simulator:
 		"""Get the date in cycles."""
 		return 0
 
+	def reset(self):
+		"""Reset the simulator."""
+		pass
+
 
 class DisassemblyException(MessageException):
 

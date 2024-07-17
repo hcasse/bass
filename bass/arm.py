@@ -138,25 +138,36 @@ class Simulator(bass.Simulator):
 		self.mem = None
 		self.banks =  None
 		self.date = 0
+		self.path = path
+		self.make()
 
-		# load the executable
+	def make(self):
+		"""Make the simulator. May raise SimException."""
+
+		# loader the executable
 		self.pf = arm.new_platform()
-		self.loader = arm.loader_open(path)
+		self.loader = arm.loader_open(self.path)
 		if self.loader is None:
-			raise bass.SimException(f"cannot load {path}")
+			raise bass.SimException(f"cannot load {self.path}")
 		arm.loader_load(self.loader, self.pf)
 		self.start = arm.loader_start(self.loader)
 
-		print("start = ", self.get_label("_start"))
 		# prepare the simulator
 		self.state = arm.new_state(self.pf)
 		self.sim = arm.new_sim(self.state, self.start, self.get_label("_start"))
 
+	def reset(self):
+		self.release()
+		self.make()
+
 	def release(self):
+		self.pf = None
 		if self.sim is not None:
 			arm.delete_sim(self.sim)
+			self.sim = None
 		if self.loader is not None:
 			arm.loader_close(self.loader)
+			self.loader = None
 
 	def get_label(self, name):
 		if self.labels is None:

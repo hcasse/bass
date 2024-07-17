@@ -248,7 +248,9 @@ class Session(orc.Session):
 		self.complete_quantum()
 
 	def reset(self, interface):
-		pass
+		"""Reset the simulation."""
+		self.sim.reset()
+		self.update_sim_display()
 
 	def compile(self, n=-1, editor=None, content=None):
 		"""Start compilation action by saving all editors."""
