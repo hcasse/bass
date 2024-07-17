@@ -47,6 +47,9 @@ class EditorTab(CodeEditor, bass.ApplicationPane):
 
 
 class Session(orc.Session):
+
+	AUTO_BP = { "main", "_exit" }
+
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
 
@@ -69,6 +72,8 @@ class Session(orc.Session):
 		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
 		self.breakpoints = orc.SetVar(set(), item_type=int)
 		self.stop_on = self.is_breakpoint
+		self.bp_to_remove = set()
+		self.current_addr = orc.Var(None, type=int)
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -84,10 +89,11 @@ class Session(orc.Session):
 		self.step_over_action = orc.Action(self.step_over, enable=paused,
 			icon=orc.Icon("!braces-asterisk"),
 			help="Execution one instruction passing over subprogram call.")
-		self.run_to_action = orc.Action(self.run_to, enable=paused,
-			icon=orc.Icon(orc.IconType.FAST_FORWARD), help="Run to current position.")
+		self.run_to_action = orc.Action(self.run_to,
+			enable=paused & orc.not_null(self.current_addr),
+			icon=orc.Icon(orc.IconType.SKIP_FORWARD), help="Run to current position.")
 		self.go_on_action = orc.Action(self.go_on, enable=paused,
-			icon=orc.Icon(orc.IconType.SKIP_FORWARD), help="Go on execution.")
+			icon=orc.Icon(orc.IconType.FAST_FORWARD), help="Go on execution.")
 		self.pause_action = orc.Action(self.pause, enable=self.running,
 			icon=orc.Icon(orc.IconType.PAUSE), help="Pause the execution")
 		self.reset_action = orc.Action(self.reset, enable=paused,
@@ -104,11 +110,16 @@ class Session(orc.Session):
 		self.timeout_button = None
 		self.editors = None
 		self.disasm = None
+		self.last_tab = None
 
 		# dialog
 		self.login_dialog = None
 		self.register_dialog = None
 		self.select_dialog = None
+
+	def get_current_addr(self):
+		"""Get the variable containing the current address."""
+		return self.current_addr
 
 	def get_breakpoints(self):
 		"""Return the variable containing the set of breakpoints."""
@@ -173,6 +184,7 @@ class Session(orc.Session):
 		# update panes
 		for pane in self.panes:
 			pane.on_sim_start(self, self.sim)
+		self.last_tab = self.editors.get_select()
 		self.editors.select(self.disasm)
 
 	def stop_sim(self):
@@ -194,6 +206,7 @@ class Session(orc.Session):
 		# update panes
 		for pane in self.panes:
 			pane.on_sim_stop(self, self.sim)
+		self.editors.select(self.last_tab)
 
 	def playstop(self, interface):
 		if self.sim is not None:
@@ -218,7 +231,11 @@ class Session(orc.Session):
 
 	def run_to(self, interface):
 		"""Run to the current cursor position."""
-		pass
+		if ~self.current_addr is not None:
+			def is_end(pc):
+				return ~self.current_addr == pc
+			self.stop_on = is_end
+			self.go_on(interface)
 
 	def go_on(self, interface):
 		"""Go on with the execution."""
@@ -262,17 +279,22 @@ class Session(orc.Session):
 			# record success
 			self.console.append(orc.text(orc.SUCCESS, "SUCCESS!"))
 			self.compiled.set(True)
+			self.current_addr.set(None)
 
 			# alert panes
 			for pane in self.panes:
 				pane.on_compile_done(self)
 
 			# put default breakpoints
+			for addr in self.bp_to_remove:
+				self.breakpoints.remove(addr)
+			self.bp_to_remove = set()
 			disasm = self.project.get_disasm()
 			for lab in ["main", "_exit"]:
 				addr = disasm.find_label(lab)
 				if addr is not None:
 					self.breakpoints.add(addr)
+					self.bp_to_remove.add(addr)
 
 
 	def print_line(self, line):

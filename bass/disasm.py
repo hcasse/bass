@@ -46,7 +46,7 @@ table.disasm tr th {
 }
 
 .disasm-current {
-	background: yellow;
+	background: yellow !important;
 }
 
 .disasm-selected {
@@ -55,12 +55,9 @@ table.disasm tr th {
 """,
 	script = """
 function disasm_double_click(disasm, event) {
-	console.log("DEBUG: disasm = " + disasm + ", event = " + event);
-	console.log("DEBUG: target = " + event.target);
 	var item = event.target;
 	if(item.tagName == "TD")
 		item = item.parentNode;
-	console.log("DEBUG: item: " + item.tagName + ": " + item);
 	if(item.tagName != "TR")
 		return;
 	let i = ui_index(item);
@@ -68,9 +65,22 @@ function disasm_double_click(disasm, event) {
 	if(i > 0)
 		ui_send({id: disasm.id, action: "bp", index: i-1 });
 }
+
+function disasm_single_click(disasm, event) {
+	var item = event.target;
+	if(item.tagName == "TD")
+		item = item.parentNode;
+	if(item.tagName != "TR")
+		return;
+	let i = ui_index(item);
+	console.log("i = " + i);
+	if(i > 0)
+		ui_send({id: disasm.id, action: "select", index: i-1 });
+}
 """
 )
 	BREAKPOINT = "disasm-bp"
+	SELECTED = "disasm-selected"
 
 	def __init__(self):
 		orc.Component.__init__(self, self.MODEL)
@@ -82,10 +92,30 @@ function disasm_double_click(disasm, event) {
 		self.map = None				# address -> index
 		self.pc_row = None
 		self.breakpoints = None
+		self.selected = None
 
 		self.add_class('text-back')
 		self.add_class('disasm')
 		self.set_attr("ondblclick", "disasm_double_click(this, event);")
+		self.set_attr("onclick", "disasm_single_click(this, event);")
+
+	def deselect(self):
+		"""Remove the selection."""
+		print("DEBUG: deselect!")
+		if self.selected is not None:
+			self.remove_class(self.SELECTED,
+				id=f"{self.get_id()}-body",
+				nth=self.selected+1)
+			self.selected = None
+
+	def select(self, n):
+		"""Select the active line."""
+		self.deselect()
+		self.selected = n
+		if self.selected is not None:
+			self.add_class(self.SELECTED,
+				id=f"{self.get_id()}-body",
+				nth=self.selected+1)
 
 	def gen(self, out):
 		out.write("<table ")
@@ -149,14 +179,17 @@ function disasm_double_click(disasm, event) {
 	def on_begin(self, session):
 		self.session = session
 		session.get_breakpoints().add_observer(self)
+		session.get_current_addr().add_observer(self)
 
 	def on_compile_done(self, session):
 		self.disasm = None
 		self.update_disasm = True
+		self.deselect()
 		if self.is_shown():
 			self.on_show()
 
 	def on_show(self):
+		orc.Component.on_show(self)
 		if self.update_disasm:
 			self.update_disasm = False
 			try:
@@ -194,12 +227,10 @@ function disasm_double_click(disasm, event) {
 			self.set_pc(sim.get_pc())
 
 	def on_add(self, set, item):
-		print("DEBUG: on add", item)
 		if self.disasm:
 			self.enable_breakpoint(item)
 
 	def on_remove(self, set, item):
-		print("DEBUG: on remove", item)
 		if self.disasm:
 			self.disable_breakpoint(item)
 
@@ -212,12 +243,22 @@ function disasm_double_click(disasm, event) {
 			addr = self.disasm.get_code()[msg["index"]][0]
 			if addr not in self.session.get_breakpoints():
 				self.session.get_breakpoints().add(addr)
-				print("DEBUG: add", addr)
 			else:
 				self.session.get_breakpoints().remove(addr)
-				print("DEBUG: remove", addr)
+		elif msg["action"] == "select":
+			addr = self.disasm.get_code()[msg["index"]][0]
+			self.session.get_current_addr().set(addr)
 		else:
 			orc.Component(self, msg, handle)
 
-
+	def update(self, addr):
+		if self.disasm is not None:
+			if addr is None:
+				self.deselect()
+			else:
+				try:
+					i = self.map[~addr]
+					self.select(i)
+				except KeyError:
+					self.deselect()
 
