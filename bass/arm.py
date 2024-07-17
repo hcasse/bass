@@ -219,8 +219,15 @@ class Simulator(bass.Simulator):
 		return self.state
 
 	def get_pc(self):
-		assert self.sim is not None
 		return arm.next_addr(self.sim)
+
+	def next_pc(self):
+		pc = arm.next_addr(self.sim)
+		decoder = arm.get_sim_decoder(self.sim)
+		inst = arm.decode(decoder, pc)
+		size = arm.get_inst_size(inst)
+		arm.free_inst(inst)
+		return pc + size//8
 
 	def get_register(self, reg):
 		assert self.state is not None

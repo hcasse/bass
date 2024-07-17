@@ -31,6 +31,21 @@ DEBUG_USER = None
 DEBUG_PROJECT = None
 
 
+class EditorTab(CodeEditor, bass.ApplicationPane):
+	"""Class for code edition (embed interaction with session)."""
+
+	def __init__(self, file):
+		self.file = file
+		text = file.load()
+		CodeEditor.__init__(self, text=text)
+
+	def on_compile(self, session, fun):
+		def on_save(self, content):
+			self.file.save(content)
+			fun()
+		self.get_content(on_save)
+
+
 class Session(orc.Session):
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
@@ -53,6 +68,7 @@ class Session(orc.Session):
 			icon=orc.Icon(orc.IconType.STOPWATCH, color="green"))
 		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
 		self.breakpoints = orc.SetVar(set(), item_type=int)
+		self.stop_on = self.is_breakpoint
 
 		# compilation and simulation actions
 		self.start_icon = orc.Icon(orc.IconType.PLAY, color="green")
@@ -112,6 +128,10 @@ class Session(orc.Session):
 			pane.on_sim_update(self, self.sim)
 		self.date.set(self.sim.get_date())
 
+	def is_breakpoint(self, pc):
+		"""Test if the given PC is a breakpoint."""
+		return pc in ~self.breakpoints
+
 	def execute_quantum(self):
 		timeout = time.time() + self.quantum_period / 1000
 		for _ in range(self.quantum_inst):
@@ -120,7 +140,7 @@ class Session(orc.Session):
 				self.sim_timeout.set(False)
 				break
 			pc = self.sim.get_pc()
-			if pc in ~self.breakpoints:
+			if self.stop_on(pc):
 				self.complete_quantum()
 				return
 		self.sim_timeout.set(True)
@@ -131,6 +151,7 @@ class Session(orc.Session):
 		self.running.set(False)
 		self.sim_timeout.set(False)
 		self.update_sim_display()
+		self.stop_on = self.is_breakpoint
 
 	def start_sim(self):
 		"""Start the simulation."""
@@ -183,16 +204,20 @@ class Session(orc.Session):
 			self.start_sim()
 
 	def step(self, interface):
+		"""Perform the execution of one instruction."""
 		self.sim.step()
 		self.update_sim_display()
 
 	def step_over(self, interface):
-		while self.sim.nextInstruction()!=self.sim.get_label("_exit"):
-			self.step(self.page.get_interface())
-		self.step(self.page.get_interface())
-		self.stop_sim()
+		"""Perform the execution of the current line."""
+		addr = self.sim.next_pc()
+		def is_end(pc):
+			return pc == addr
+		self.stop_on = is_end
+		self.go_on(interface)
 
 	def run_to(self, interface):
+		"""Run to the current cursor position."""
 		pass
 
 	def go_on(self, interface):
@@ -408,7 +433,7 @@ class Session(orc.Session):
 		for tab in self.editors.tabs:
 			self.editors.remove(tab)
 		for file in project.get_sources():
-			editor = CodeEditor(text = file.load())
+			editor = EditorTab(file)
 			self.editors.append_tab(editor,	label=file.get_name())
 			self.panes.append(editor)
 			editor.on_begin(self)

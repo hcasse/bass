@@ -85,6 +85,10 @@ class Simulator:
 		"""Get the address of the PC."""
 		return None
 
+	def next_pc(self):
+		"""Get the address of the next instruction."""
+		return None
+
 	def step(self):
 		"""Execute the current instruction and stop."""
 		pass

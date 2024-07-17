@@ -80,3 +80,4 @@ class CodeEditor(Component, bass.ApplicationPane):
 		else:
 			Component.receive(self, msg, handler)
 
+
