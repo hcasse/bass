@@ -117,6 +117,10 @@ class Simulator:
 		"""Reset the simulator."""
 		pass
 
+	def get_byte(self, addr):
+		"""Get the byte at the given address."""
+		pass
+
 
 class DisassemblyException(MessageException):
 

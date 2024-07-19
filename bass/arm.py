@@ -132,6 +132,7 @@ class Simulator(bass.Simulator):
 		self.labels = None
 		self.breaks = []
 		self.pf = None
+		self.mem = None
 		self.loader = None
 		self.state = None
 		self.sim = None
@@ -146,6 +147,7 @@ class Simulator(bass.Simulator):
 
 		# loader the executable
 		self.pf = arm.new_platform()
+		self.mem = arm.get_memory(self.pf, 0)
 		self.loader = arm.loader_open(self.path)
 		if self.loader is None:
 			raise bass.SimException(f"cannot load {self.path}")
@@ -250,6 +252,9 @@ class Simulator(bass.Simulator):
 
 	def get_date(self):
 		return self.date
+
+	def get_byte(self, addr):
+		return arm.mem_read8(self.mem, addr)
 
 	@staticmethod
 	def get_arch():

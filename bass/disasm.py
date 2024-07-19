@@ -238,7 +238,7 @@ function disasm_single_click(disasm, event) {
 		for bp in ~set:
 			self.on_remove(set, bp)
 
-	def receive(self, msg, handle):
+	def receive(self, msg, handler):
 		if msg["action"] == "bp":
 			addr = self.disasm.get_code()[msg["index"]][0]
 			if addr not in self.session.get_breakpoints():
@@ -249,15 +249,15 @@ function disasm_single_click(disasm, event) {
 			addr = self.disasm.get_code()[msg["index"]][0]
 			self.session.get_current_addr().set(addr)
 		else:
-			orc.Component(self, msg, handle)
+			orc.Component.receive(self, msg, handler)
 
-	def update(self, addr):
+	def update(self, subject):
 		if self.disasm is not None:
-			if addr is None:
+			if ~subject is None:
 				self.deselect()
 			else:
 				try:
-					i = self.map[~addr]
+					i = self.map[~subject]
 					self.select(i)
 				except KeyError:
 					self.deselect()

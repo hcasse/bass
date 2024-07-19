@@ -21,6 +21,7 @@ from bass.disasm import DisasmPane
 from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
+from bass.memory import MemoryPane
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -39,10 +40,10 @@ class EditorTab(CodeEditor, bass.ApplicationPane):
 		text = file.load()
 		CodeEditor.__init__(self, text=text)
 
-	def on_compile(self, session, fun):
+	def on_compile(self, session, on_ready):
 		def on_save(self, content):
 			self.file.save(content)
-			fun()
+			on_ready()
 		self.get_content(on_save)
 
 
@@ -102,7 +103,6 @@ class Session(orc.Session):
 		# UI
 		self.panes = []
 		self.page = None
-		self.memory_pane = None
 		self.user_label = None
 		self.project_label = None
 		self.console = None
@@ -111,6 +111,7 @@ class Session(orc.Session):
 		self.editors = None
 		self.disasm = None
 		self.last_tab = None
+		self.addons = None
 
 		# dialog
 		self.login_dialog = None
@@ -349,14 +350,17 @@ class Session(orc.Session):
 
 		# generate the page
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
-		self.memory_pane = orc.Console(init = "Memory")
+		#self.memory_pane = orc.Console(init = "Memory")
 		register_pane = RegisterPane()
 		self.panes.append(register_pane)
 		self.editors = orc.TabbedPane()
 		#self.panes.append(editor_pane)
+		memory_pane = MemoryPane()
+		self.panes.append(memory_pane)
+		self.addons = orc.TabbedPane([("Memory", memory_pane)])
 		editor_group = orc.HGroup([
 			self.editors,
-			self.memory_pane
+			self.addons
 		])
 		editor_group.weight = 3
 		self.console.weight = 1
