@@ -164,12 +164,12 @@ class ApplicationPane:
 		"""Called each time the simulator state needs to be updated."""
 		pass
 
-	def on_compile(self, session, on_ready):
-		"""Call to prepare for compilation. Each pane call on_ready() when it
-		is ready. This allows to support asynchronous for editor saving.
+	def on_save(self, session, on_done):
+		"""Called to save tje sources. Each pane call on_done() when the
+		save is done. This allows to support asynchronous for editor saving.
 		Default implementation just call on_ready."""
-		on_ready()
+		on_done()
 
-	def on_compile_done(self, session):
+	def on_compiled(self, session):
 		"""Called when the compilation is done."""
 		pass

@@ -40,11 +40,11 @@ class EditorTab(CodeEditor, bass.ApplicationPane):
 		text = file.load()
 		CodeEditor.__init__(self, text=text)
 
-	def on_compile(self, session, on_ready):
-		def on_save(self, content):
+	def on_save(self, session, on_done):
+		def save(self, content):
 			self.file.save(content)
-			on_ready()
-		self.get_content(on_save)
+			on_done()
+		self.get_content(save)
 
 
 class Session(orc.Session):
@@ -253,17 +253,20 @@ class Session(orc.Session):
 		self.sim.reset()
 		self.update_sim_display()
 
-	def compile(self, n=-1, editor=None, content=None):
-		"""Start compilation action by saving all editors."""
+	def save_all(self, on_done):
+		"""Save all editors and call function on_done() when it is completed.
+		Other parameters must not be used."""
 		self.ready_count = len(self.panes)
+		def on_ready():
+			self.ready_count -= 1
+			if self.ready_count == 0:
+				on_done()
 		for pane in self.panes:
-			pane.on_compile(self, self.on_ready)
+			pane.on_save(self, on_ready)
 
-	def on_ready(self):
-		"""Wait for all pane to be ready to compile."""
-		self.ready_count -= 1
-		if self.ready_count == 0:
-			self.then_compile()
+	def compile(self, interface):
+		"""Start compilation action by saving all editors."""
+		self.save_all(self.then_compile)
 
 	def then_compile(self):
 		"""Whan all is saved, finally perform the compilation."""
@@ -286,7 +289,7 @@ class Session(orc.Session):
 
 			# alert panes
 			for pane in self.panes:
-				pane.on_compile_done(self)
+				pane.on_compiled(self)
 
 			# put default breakpoints
 			for addr in self.bp_to_remove:

@@ -181,7 +181,7 @@ function disasm_single_click(disasm, event) {
 		session.get_breakpoints().add_observer(self)
 		session.get_current_addr().add_observer(self)
 
-	def on_compile_done(self, session):
+	def on_compiled(self, session):
 		self.disasm = None
 		self.update_disasm = True
 		self.deselect()
