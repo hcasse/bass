@@ -6,7 +6,7 @@ OBJDUMP=$(ARCH)objdump
 
 all: main.elf
 
-main.elf:
+main.elf: main.s
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 disasm: main.elf

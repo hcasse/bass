@@ -148,6 +148,10 @@ class ApplicationPane:
 		"""Called when the session is started."""
 		pass
 
+	def on_end(self, session):
+		"""Called when the project is closed."""
+		pass
+
 	def on_project_set(self, session, project):
 		"""Called when the project is changed."""
 		pass

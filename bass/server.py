@@ -100,6 +100,13 @@ class Session(orc.Session):
 		self.reset_action = orc.Action(self.reset, enable=paused,
 			icon=orc.Icon(orc.IconType.RESET), help="Reset the simulation.")
 
+		self.open_new_project_action = orc.Action(self.open_new_project,
+			label="Open/New", help="Close current project and open/create another.")
+		self.rename_project_action = orc.Action(self.rename_project,
+			label="Rename", help="Rename the current project.")
+		self.delete_project_action = orc.Action(self.delete_project,
+			label="Delete", help="Delete the current project.")
+
 		# UI
 		self.panes = []
 		self.page = None
@@ -345,11 +352,21 @@ class Session(orc.Session):
 
 	def get_index(self):
 
-		# prepare user/project display
+		# prepare user display
 		self.user_label = orc.Label("")
 		self.user_label.set_style("min-width", "8em")
+
+		# prepare project display
 		self.project_label = orc.Label("")
 		self.project_label.set_style("min-width", "8em")
+		project_menu = orc.MenuButton(
+			orc.Menu([
+				orc.Button(self.open_new_project_action),
+				orc.Button(self.rename_project_action),
+				orc.Button(self.delete_project_action)
+			]),
+			image = orc.Icon(orc.IconType.PROJECT)
+		)
 
 		# generate the page
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
@@ -373,7 +390,7 @@ class Session(orc.Session):
 		self.page = orc.Page(
 			orc.VGroup([
 				orc.Header("BASS", [
-					orc.Button(image = orc.Icon(orc.IconType.PROJECT)),
+					project_menu,
 					self.project_label,
 					orc.Button(image = orc.Icon(orc.IconType.PERSON), on_click=self.edit_user),
 					self.user_label,
@@ -451,7 +468,8 @@ class Session(orc.Session):
 		return self.page
 
 
-	# Connecting functions
+
+	# project management
 
 	def setup_project(self, project):
 		"""Setup the project in the main window."""
@@ -461,8 +479,6 @@ class Session(orc.Session):
 		self.project_label.set_text(project.get_name())
 
 		# setup editors
-		for tab in self.editors.tabs:
-			self.editors.remove(tab)
 		for file in project.get_sources():
 			editor = EditorTab(file)
 			self.editors.append_tab(editor,	label=file.get_name())
@@ -476,6 +492,37 @@ class Session(orc.Session):
 		# setup panes
 		for pane in self.panes:
 			pane.on_project_set(self, project)
+
+	def cleanup_project(self, after):
+		"""Cleanup a project before closing. After is the function that
+		is called after the cleanup (no argument)."""
+		if ~self.started:
+			self.on_sim_stop()
+		def after_save():
+			for pane in self.panes:
+				pane.on_end(self)
+			while self.editors.get_tabs():
+				self.panes.remove(self.editors.get_tabs()[0].get_component())
+				self.editors.remove_tab(0)
+			self.disasm = None
+			self.project = None
+			after()
+		self.save_all(after_save)
+
+	def open_new_project(self, interface):
+		"""Implements action open/new."""
+		def after():
+			self.select_project()
+		self.cleanup_project(after)
+
+	def rename_project(self, interface):
+		pass
+
+	def delete_project(self, interface):
+		pass
+
+
+	# user management
 
 	def setup_user(self, user):
 		"""Set the user in the main window."""

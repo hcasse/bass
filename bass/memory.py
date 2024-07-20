@@ -124,26 +124,27 @@ function bass_memory_update(msg) {
 
 	def update_mem(self):
 		"""Udpate the memory."""
-		new_changes = set()
-		sets = []
-		vals = []
-		for i in range(self.size):
-			byte = self.sim.get_byte(self.base + i)
-			if byte != self.mem[i]:
-				self.mem[i] = byte
-				sets.append(i)
-				vals.append(byte)
-				new_changes.add(i)
-		old_changes = self.changes - new_changes
-		resets = list(old_changes)
-		self.changes = new_changes
-		if sets or resets:
-			self.call("bass_memory_update", {
-				"id": f"{self.get_id()}-body",
-				"sets": sets,
-				"vals": vals,
-				"resets": resets
-			})
+		if self.mem is not None:
+			new_changes = set()
+			sets = []
+			vals = []
+			for i in range(self.size):
+				byte = self.sim.get_byte(self.base + i)
+				if byte != self.mem[i]:
+					self.mem[i] = byte
+					sets.append(i)
+					vals.append(byte)
+					new_changes.add(i)
+			old_changes = self.changes - new_changes
+			resets = list(old_changes)
+			self.changes = new_changes
+			if sets or resets:
+				self.call("bass_memory_update", {
+					"id": f"{self.get_id()}-body",
+					"sets": sets,
+					"vals": vals,
+					"resets": resets
+				})
 
 	def start_sim(self, sim):
 		"""Start a new simulation."""

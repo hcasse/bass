@@ -93,9 +93,12 @@ class SelectDialog(dialog.Base):
 		self.selected_template = ListVar([])
 		self.name = var("")
 
+		def not_exists():
+			return not any(~self.name == p.get_name() for p in ~self.projects)
 		create_enable = not_null(self.selected_template) \
 			& if_error(not_null(self.name), "Name required!") \
-			& if_error(Predicate(fun=self.not_exists), "Project already exists!")
+			& if_error(Predicate(fun=not_exists, vars=[self.name]), \
+				"Project already exists!")
 		create_project = Action(
 				fun = server.create_project,
 				label = "Create",
@@ -133,9 +136,6 @@ class SelectDialog(dialog.Base):
 		self.set_style("min-width", "400px")
 		self.set_style("min-height", "400px")
 
-	def not_exists(self):
-		print("DEBUG:", ~self.name, "in", ~self.projects, "=", ~self.name not in ~self.projects)
-		return ~self.name not in ~self.projects
 
 	def error(self, msg):
 		self.msg.show_error(msg)
