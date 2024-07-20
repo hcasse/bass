@@ -217,9 +217,6 @@ class Simulator(bass.Simulator):
 	def nextInstruction(self):
 		return arm.next_addr(self.sim)
 
-	def setRegister(self,ri,registre,value):
-		arm.set_register(self.state,ri, registre, value)
-
 	def getMemory(self):
 		if self.mem is None:
 			self.mem = arm.get_memory(self.pf,0)
@@ -248,6 +245,7 @@ class Simulator(bass.Simulator):
 
 	def set_register(self, reg, value):
 		assert self.state is not None
+		print("DEBUG: bank =", reg.bank, ", index =", reg.index)
 		arm.set_register(self.state, reg.bank, reg.index, value)
 
 	def get_date(self):

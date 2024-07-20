@@ -25,6 +25,14 @@ class DisplayRegister:
 		else:
 			return self.format_fun(self.value)
 
+	def parse(self, text):
+		"""Parse the value of the register. Return None in case of
+		error."""
+		try:
+			return int(text)
+		except ValueError:
+			return None
+
 	def set_value(self, value):
 		"""Change the value of the register."""
 		self.value = value
@@ -37,6 +45,7 @@ class RegisterModel(TableModel):
 		TableModel.__init__(self)
 		self.regs = regs
 		self.pane = pane
+		self.updating = False
 
 	def get_column_count(self):
 		return 2
@@ -80,14 +89,37 @@ table.register-pane tr td:nth-child(2) {
 """
 )
 
+	class SimUpdater(orc.TableObserver):
+		"""Update the simulation when """
+
+		def __init__(self, parent):
+			self.parent = parent
+
+		def on_cell_set(self, table, row, col, val):
+			assert col == 1
+			self.parent.sim.set_register(self.parent.regs[row].reg, val)
+
 	def __init__(self):
-		TableView.__init__(self, [], no_header=True, model=self.MODEL)
+		TableView.__init__(self, [], no_header=True, model=self.MODEL,
+			format=self.format, parse=self.parse)
 		ApplicationPane.__init__(self)
 		self.arch = None
 		self.regs = None
 		self.add_class("register-pane")
 		self.changed = []
 		self.sim = None
+		self.updater = RegisterPane.SimUpdater(self)
+
+	def format(self, row, col, val):
+		"""Format the value according to the register."""
+		if col == 0:
+			return val
+		else:
+			return self.regs[row].format()
+
+	def parse(self, row, col, val):
+		"""Parse the cell according to the register."""
+		return self.regs[row].parse(val)
 
 	def on_project_set(self, session, project):
 		"""Set the current architecture."""
@@ -109,16 +141,18 @@ table.register-pane tr td:nth-child(2) {
 
 	def on_sim_update(self, session, sim):
 		changed = []
+		self.get_table_model().remove_observer(self.updater)
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
 			if val != reg.value:
 				self.get_table_model().set_cell(row, 1, val)
-				changed.append(reg)
+				changed.append(row)
 				if reg not in self.changed:
 					self.add_row_class(row, "error-text")
 			else:
-				if reg in self.changed:
+				if row in self.changed:
 					self.remove_row_class(row, "error-text")
+		self.get_table_model().add_observer(self.updater)
 		self.changed = changed
 
 	def on_sim_start(self, session, sim):
@@ -126,8 +160,14 @@ table.register-pane tr td:nth-child(2) {
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
 			self.get_table_model().set_cell(row, 1, val)
+		self.get_table_model().add_observer(self.updater)
 
 	def on_sim_stop(self, session, sim):
+		self.get_table_model().remove_observer(self.updater)
 		self.sim = None
 		for i in range(len(self.regs)):
 			self.get_table_model().set_cell(i, 1, None)
+		for i in self.changed:
+			self.remove_row_class(i, "error-text")
+
+

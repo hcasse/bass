@@ -194,6 +194,7 @@ class Session(orc.Session):
 			pane.on_sim_start(self, self.sim)
 		self.last_tab = self.editors.get_select()
 		self.editors.select(self.disasm)
+		self.playstop_action.set_icon(self.stop_icon)
 
 	def stop_sim(self):
 		"""Stop the current simulation."""
@@ -215,13 +216,12 @@ class Session(orc.Session):
 		for pane in self.panes:
 			pane.on_sim_stop(self, self.sim)
 		self.editors.select(self.last_tab)
+		self.playstop_action.set_icon(self.start_icon)
 
 	def playstop(self, interface):
 		if self.sim is not None:
-			self.playstop_action.set_icon(self.start_icon)
 			self.stop_sim()
 		else:
-			self.playstop_action.set_icon(self.stop_icon)
 			self.start_sim()
 
 	def step(self, interface):
@@ -492,12 +492,13 @@ class Session(orc.Session):
 		# setup panes
 		for pane in self.panes:
 			pane.on_project_set(self, project)
+		self.compiled.set(False)
 
 	def cleanup_project(self, after):
 		"""Cleanup a project before closing. After is the function that
 		is called after the cleanup (no argument)."""
 		if ~self.started:
-			self.on_sim_stop()
+			self.stop_sim()
 		def after_save():
 			for pane in self.panes:
 				pane.on_end(self)
