@@ -3,7 +3,7 @@
 import orchid as orc
 from orchid.table import TableView
 from orchid.models import TableModel
-from bass import ApplicationPane
+from bass import ApplicationPane, RegDisplay
 
 
 class DisplayRegister:
@@ -11,8 +11,8 @@ class DisplayRegister:
 
 	def __init__(self, reg):
 		self.reg = reg
-		self.format_fun = lambda val: reg.format(val)
 		self.value = None
+		self.fmt = reg.get_format()
 
 	def get_name(self):
 		"""Get the name of the register."""
@@ -23,19 +23,26 @@ class DisplayRegister:
 		if self.value is None:
 			return ""
 		else:
-			return self.format_fun(self.value)
+			return self.fmt.format(self.value)
 
 	def parse(self, text):
 		"""Parse the value of the register. Return None in case of
 		error."""
-		try:
-			return int(text)
-		except ValueError:
-			return None
+		return self.fmt.parse(text)
 
 	def set_value(self, value):
 		"""Change the value of the register."""
 		self.value = value
+
+	def is_editable(self):
+		return self.fmt.parse is not None
+
+	def set_format(self, fmt = None):
+		"""Change the display format of the register."""
+		if fmt is None:
+			self.fmt = self.reg.get_format()
+		else:
+			self.fmt = fmt
 
 
 class RegisterModel(TableModel):
@@ -61,9 +68,6 @@ class RegisterModel(TableModel):
 			return self.regs[row].get_name()
 		else:
 			return self.regs[row].format()
-
-	def is_editable(self, row, col):
-		return col == 1 and self.pane.sim is not None
 
 	def set_cell(self, row, col, val):
 		if col == 1:
@@ -100,15 +104,63 @@ table.register-pane tr td:nth-child(2) {
 			self.parent.sim.set_register(self.parent.regs[row].reg, val)
 
 	def __init__(self):
+
+		# prepare actions
+		self.default_action = orc.Action(
+			lambda i: self.show_fmt(None), label="Default")
+		self.signed_action = orc.Action(
+			lambda i: self.show_fmt(RegDisplay.SIGNED), label="Signed")
+		self.unsigned_action = orc.Action(
+			lambda i: self.show_fmt(RegDisplay.UNSIGNED), label="Unsigned")
+		self.hex_action = orc.Action(
+			lambda i: self.show_fmt(RegDisplay.HEX), label="Hexadecimal")
+		self.bin_action = orc.Action(
+			lambda i: self.show_fmt(RegDisplay.BIN), label="Binary")
+		toolbar = orc.MenuButton(orc.Menu([
+				orc.Button(self.default_action),
+				orc.Button(self.signed_action),
+				orc.Button(self.unsigned_action),
+				orc.Button(self.hex_action),
+				orc.Button(self.bin_action)
+			]))
+
+		# init parent
 		TableView.__init__(self, [], no_header=True, model=self.MODEL,
-			format=self.format, parse=self.parse)
+			format=self.format, parse=self.parse,
+			is_editable=self.is_editable, context_toolbar=toolbar)
 		ApplicationPane.__init__(self)
+		self.disable()
+
+		# prepare state
 		self.arch = None
 		self.regs = None
 		self.add_class("register-pane")
 		self.changed = []
 		self.sim = None
 		self.updater = RegisterPane.SimUpdater(self)
+
+	def show_fmt(self, fmt):
+		row = self.get_context_row()
+		self.regs[row].set_format(fmt)
+		self.refresh_cell(row, 1)
+
+	def show_default(self, interface):
+		self.show_fmt(None)
+
+	def show_signed(self, interface):
+		pass
+
+	def show_unsigned(self, interface):
+		pass
+
+	def show_hex(self, interface):
+		pass
+
+	def is_editable(self, row, col):
+		"""Test if the given cell is editable."""
+		return col == 1 \
+			and self.sim is not None  \
+			and self.regs[row].is_editable()
 
 	def format(self, row, col, val):
 		"""Format the value according to the register."""
@@ -161,8 +213,10 @@ table.register-pane tr td:nth-child(2) {
 			val = sim.get_register(reg.reg)
 			self.get_table_model().set_cell(row, 1, val)
 		self.get_table_model().add_observer(self.updater)
+		self.enable()
 
 	def on_sim_stop(self, session, sim):
+		self.disable()
 		self.get_table_model().remove_observer(self.updater)
 		self.sim = None
 		for i in range(len(self.regs)):

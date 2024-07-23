@@ -371,7 +371,7 @@ class Session(orc.Session):
 		# generate the page
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
 		#self.memory_pane = orc.Console(init = "Memory")
-		register_pane = RegisterPane()
+		register_pane = RegisterPane().set_weight(1)
 		self.panes.append(register_pane)
 		self.editors = orc.TabbedPane()
 		#self.panes.append(editor_pane)
@@ -414,7 +414,7 @@ class Session(orc.Session):
 					orc.VGroup([
 						editor_group,
 						self.console
-					])
+					]).set_weight(4)
 				]),
 				orc.StatusBar([
 					orc.hspring(),

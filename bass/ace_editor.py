@@ -13,10 +13,12 @@ MODEL = Model(
 	"base.editor",
 	#script_paths = ["ace/ace.js"],
 	script_paths = [
+		"test.js",
 		"https://cdn.jsdelivr.net/npm/ace-builds@1.35.0/src-min-noconflict/ace.js"
 	],
 	script = """
 function ace_new(msg) {
+	ace_test();
 	const id = msg['id'];
 	const component = document.getElementById(id);
 	const editor = ace.edit(id)

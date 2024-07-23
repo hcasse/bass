@@ -24,17 +24,24 @@ CC_COMMAND = f"{CC} {CFLAGS} -o '%%s' '%%s' {LDFLAGS}"
 
 class Register(bass.Register):
 
-	def __init__(self, name, bank, index):
+	def __init__(self, name, bank, index, format=bass.RegDisplay.SIGNED):
 		bass.Register.__init__(self, name)
 		self.bank = bank
 		self.index = index
+		self.fmt = format
+
+	def format(self, value):
+		return self.fmt.format(value)
+
+	def get_format(self):
+		return self.fmt
 
 
 class AddrRegister(Register):
 	"""Register containing an address."""
 
 	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index)
+		Register.__init__(self, name, bank, index, bass.RegDisplay.HEX)
 
 	def format(self, value):
 		return f"{value:08x}"
@@ -55,10 +62,8 @@ class CPSRegister(Register):
 		0b1111: "Sys"
 	}
 
-	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index)
-
-	def format(self, value):
+	@staticmethod
+	def do_format(value):
 		N = "N" if (value >> 31) & 1 else "-"
 		Z = "Z" if (value >> 30) & 1 else "-"
 		C = "C" if (value >> 29) & 1 else "-"
@@ -68,10 +73,15 @@ class CPSRegister(Register):
 		I = "I" if (value >> 7) & 1 else "-"
 		F = "F" if (value >> 6) & 1 else "-"
 		try:
-			M = self.MODES[value & 0xf]
+			M = CPSRegister.MODES[value & 0xf]
 		except KeyError:
 			M = "Invalid"
 		return f"{N}{Z}{C}{V} {E}{A}{I}{F} {M}"
+
+	FORMAT = bass.Format(None, do_format, custom = True)
+
+	def __init__(self, name, bank, index):
+		Register.__init__(self, name, bank, index, self.FORMAT)
 
 
 class Arch(bass.Arch):
@@ -245,7 +255,6 @@ class Simulator(bass.Simulator):
 
 	def set_register(self, reg, value):
 		assert self.state is not None
-		print("DEBUG: bank =", reg.bank, ", index =", reg.index)
 		arm.set_register(self.state, reg.bank, reg.index, value)
 
 	def get_date(self):

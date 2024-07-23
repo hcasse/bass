@@ -1,5 +1,7 @@
 """Main module of the BASS."""
 
+from enum import Enum
+
 class MessageException(Exception):
 	"""Base class of exception supporting a message."""
 
@@ -18,6 +20,50 @@ class SimException(MessageException):
 		MessageException.__init__(self, msg)
 
 
+class Format:
+	"""Format to display and parse data."""
+
+	def __init__(self, parse, format, custom = False):
+		self.parse = parse
+		self.format = format
+		self.custom = custom
+
+class RegDisplay:
+
+	@staticmethod
+	def unsigned(val):
+		if val >= 0:
+			return val
+		else:
+			return val + 0x100000000
+
+	@staticmethod
+	def on_exe(f):
+		def convert(val):
+			try:
+				return f(val)
+			except ValueError:
+				return None
+		return convert
+
+	HEX = Format(
+		on_exe (lambda v: int(v, 16)),
+		lambda v: f"{RegDisplay.unsigned(v):08x}"
+	)
+	BIN = Format(
+		on_exe (lambda v: int(v, 2)),
+		lambda v: f"{RegDisplay.unsigned(v):032b}"
+	)
+	SIGNED = Format(
+		on_exe(lambda v: int(v)),
+		lambda v: str(v)
+	)
+	UNSIGNED = Format(
+		on_exe(lambda v: int(v)),
+		lambda v: str(RegDisplay.unsigned(v))
+	)
+
+
 class Register:
 	"""Represents a register in the simulator."""
 
@@ -31,6 +77,10 @@ class Register:
 	def format(self, value):
 		"""Get formatted value of the register for human display."""
 		return str(value)
+
+	def get_format(self):
+		"""Get the format used by this register."""
+		pass
 
 
 class RegisterBank:
