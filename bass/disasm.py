@@ -101,7 +101,6 @@ function disasm_single_click(disasm, event) {
 
 	def deselect(self):
 		"""Remove the selection."""
-		print("DEBUG: deselect!")
 		if self.selected is not None:
 			self.remove_class(self.SELECTED,
 				id=f"{self.get_id()}-body",

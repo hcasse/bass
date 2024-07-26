@@ -14,8 +14,7 @@
 	* open file
 	* delete file
 [ ] User menu:
-	* change password
-	* change email
+	* configure
 	* download all projects
 [ ] Display more on about.
 [ ] Add UT3 publicity.
@@ -25,10 +24,10 @@
 
 ## Register Pane
 
-[ ] Provide customization of register value display
+[X] Provide customization of register value display
 	(default, hexa, unsigned/signed dec, binary)
 [ ] Support for folding registers for input-output.
-[ ] edit the register
+[X] edit the register
 
 
 ## Code Editors
@@ -44,7 +43,7 @@
 
 ## Memory Pane
 
-[ ] <center> key performs the action
+[ ] <enter> key performs the action
 [ ] support type of display (dec/hex/signed byte/short/long, char)
 [ ] support several display at the same time
 [ ] support of labels

@@ -107,6 +107,11 @@ class Session(orc.Session):
 		self.delete_project_action = orc.Action(self.delete_project,
 			label="Delete", help="Delete the current project.")
 
+		self.config_user_action = orc.Action(self.config_user,
+			label="Configure", help="Change user configuration.")
+		self.logout_action = orc.Action(self.logout,
+			label="Logout", help="Logout from this session.")
+
 		# UI
 		self.panes = []
 		self.page = None
@@ -355,6 +360,13 @@ class Session(orc.Session):
 		# prepare user display
 		self.user_label = orc.Label("")
 		self.user_label.set_style("min-width", "8em")
+		user_menu = orc.MenuButton(
+			orc.Menu([
+				orc.Button(self.config_user_action),
+				orc.Button(self.logout_action)
+			]),
+			image = orc.Icon(orc.IconType.PERSON)
+		)
 
 		# prepare project display
 		self.project_label = orc.Label("")
@@ -390,13 +402,10 @@ class Session(orc.Session):
 		self.page = orc.Page(
 			orc.VGroup([
 				orc.Header("BASS", [
-					project_menu,
-					self.project_label,
-					orc.Button(image = orc.Icon(orc.IconType.PERSON), on_click=self.edit_user),
-					self.user_label,
+					project_menu, self.project_label,
+					user_menu, self.user_label,
 				]),
 				orc.ToolBar([
-					self.make_menu(),
 					orc.Button(self.compile_action),
 					orc.Button(self.playstop_action),
 					orc.Button(self.step_action),
@@ -466,7 +475,6 @@ class Session(orc.Session):
 					sys.exit(1)
 
 		return self.page
-
 
 
 	# project management
@@ -545,6 +553,18 @@ class Session(orc.Session):
 				self.select_project()
 			except DataException as e:
 				self.login_dialog.error(f"cannot log to {name}: {e}")
+
+
+	def config_user(self, interface):
+		"""Change configuration of the user."""
+		pass
+
+	def logout(self, interface):
+		"""Stop the current session."""
+		def after():
+			self.user = None
+			self.login_dialog.show()
+		self.cleanup_project(after)
 
 	def register_user(self, console):
 		self.login_dialog.hide()

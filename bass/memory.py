@@ -61,7 +61,6 @@ function bass_memory_update(msg) {
 		td.classList.remove("error-text");
 		i++;
 	}
-	console.log("DEBUG:" + JSON.stringify(msg));
 }
 """
 	)
@@ -178,11 +177,14 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 			enable=(self.addr != None) & (self.size > 0),
 			icon=orc.Icon(orc.IconType.CHECK),
 			help="Display the configured chunk of memory")
-		self.selector = orc.HGroup([
-			orc.Field(self.addr, place_holder="address", weight=2),
-			orc.Field(self.size, place_holder="size", weight=1),
-			orc.Button(add_action)
-		])
+		self.selector = orc.KeyGroup(
+			orc.HGroup([
+				orc.Field(self.addr, place_holder="address", weight=2),
+				orc.Field(self.size, place_holder="size", weight=1),
+				orc.Button(add_action)
+			]),
+			orc.Key(orc.Key.ENTER, add_action)
+		)
 		self.selector.disable()
 		self.mdisplay = MemoryDisplayer()
 		orc.VGroup.__init__(self, [
@@ -198,7 +200,6 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 
 	def add_chunk(self, interface):
 		"""Add a chunk display."""
-		print("DEBUG:", ~self.addr, ":", ~self.size)
 		self.mdisplay.show_mem(~self.addr, ~self.size)
 
 	def on_sim_start(self, session, sim):
