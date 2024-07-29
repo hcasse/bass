@@ -177,14 +177,11 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 			enable=(self.addr != None) & (self.size > 0),
 			icon=orc.Icon(orc.IconType.CHECK),
 			help="Display the configured chunk of memory")
-		self.selector = orc.KeyGroup(
-			orc.HGroup([
+		self.selector = orc.HGroup([
 				orc.Field(self.addr, place_holder="address", weight=2),
 				orc.Field(self.size, place_holder="size", weight=1),
 				orc.Button(add_action)
-			]),
-			orc.Key(orc.Key.ENTER, add_action)
-		)
+			]).key(orc.Key.ENTER, add_action)
 		self.selector.disable()
 		self.mdisplay = MemoryDisplayer()
 		orc.VGroup.__init__(self, [

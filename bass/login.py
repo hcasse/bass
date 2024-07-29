@@ -4,7 +4,7 @@
 from orchid import \
 	HGroup, VGroup, var, Action, ListView, MessageLabel, Field, \
 	Button, PasswordField, Label, hspring, matches, if_error, equals, \
-	Predicate, EmailField, ListVar, Form, not_null, is_password
+	Predicate, EmailField, ListVar, Form, not_null, is_password, Key
 from orchid import dialog
 
 class LoginDialog(dialog.Base):
@@ -20,8 +20,10 @@ class LoginDialog(dialog.Base):
 		self.msg = MessageLabel("")
 		main = VGroup([
 				Form([
-					Field(var = self.user, size=20),
-					PasswordField(var = self.pwd, size=20),
+					Field(var = self.user, size=20)
+						.key(Key.ENTER, lambda: self.page.next_focus()),
+					PasswordField(var = self.pwd, size=20)
+						.key(Key.ENTER, login),
 				]),
 				HGroup([hspring(), Button(action=login)]),
 				HGroup([Label("Password forgotten?"), hspring(), Button(action=retrieve)]),
