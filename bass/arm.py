@@ -263,6 +263,12 @@ class Simulator(bass.Simulator):
 	def get_byte(self, addr):
 		return arm.mem_read8(self.mem, addr)
 
+	def get_half(self, addr):
+		return arm.mem_read16(self.mem, addr)
+
+	def get_word(self, addr):
+		return arm.mem_read32(self.mem, addr)
+
 	@staticmethod
 	def get_arch():
 		if Simulator.ARCH is None:

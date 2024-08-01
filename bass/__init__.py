@@ -169,7 +169,15 @@ class Simulator:
 
 	def get_byte(self, addr):
 		"""Get the byte at the given address."""
-		pass
+		return None
+
+	def get_half(self, addr):
+		"""Get unsigned 16b integer."""
+		return None
+
+	def get_word(self, addr):
+		"""Get unsigned 32b integer."""
+		return None
 
 
 class DisassemblyException(MessageException):
