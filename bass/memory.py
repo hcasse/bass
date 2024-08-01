@@ -4,11 +4,22 @@ import orchid as orc
 from orchid.util import Buffer
 import bass
 
+
 class AddressType(orc.Type):
 	"""Type to represent addresses."""
 
 	def __init__(self):
 		orc.Type.__init__(self)
+		self.sim = None
+		self.disasm = None
+
+	def set_sim(self, sim):
+		"""Set the current simulator."""
+		self.sim = sim
+		print("DEDUG: set sim =", sim)
+
+	def set_disasm(self, disasm):
+		self.disasm = disasm
 
 	def get_null(self):
 		return None
@@ -17,13 +28,37 @@ class AddressType(orc.Type):
 		if value is None:
 			return ""
 		else:
-			return str(value)
+			return value
 
 	def parse(self, text):
+		addr = self.address(text)
+		if addr is None:
+			return None
+		else:
+			return text
+
+	def address(self, text):
+		"""Get the value as an address."""
+
+		# an address?
 		try:
 			return int(text, 16)
 		except ValueError:
-			return None
+			pass
+
+		# a label?
+		addr = self.disasm.find_label(text)
+		if addr is not None:
+			return addr
+
+		# a register?
+		print("DEBUG: use of sim =", self.sim)
+		reg = self.sim.get_arch().find_register(text)
+		if reg is not None:
+			return self.sim.get_register(reg)
+
+		# unknown
+		return None
 
 ADDRESS_TYPE = AddressType()
 
@@ -317,11 +352,16 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 
 	def add_chunk(self, interface):
 		"""Add a chunk display."""
-		self.mdisplay.show_mem(~self.addr, ~self.size, Displays.LIST[~self.type])
+		self.mdisplay.show_mem(
+			ADDRESS_TYPE.address(~self.addr),
+			~self.size,
+			Displays.LIST[~self.type])
 
 	def on_sim_start(self, session, sim):
 		self.selector.enable()
+		ADDRESS_TYPE.set_sim(sim)
 		self.mdisplay.start_sim(sim)
+		print("DEBUG: sim =", sim)
 
 	def on_sim_stop(self, session, sim):
 		self.selector.disable()
@@ -329,3 +369,6 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 
 	def on_sim_update(self, session, sim):
 		self.mdisplay.update_mem()
+
+	def on_compiled(self, session):
+		ADDRESS_TYPE.set_disasm(session.get_project().get_disasm())

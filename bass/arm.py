@@ -4,24 +4,6 @@ import os.path
 import armgliss as arm
 import bass
 
-DATADIR = os.path.abspath("data")
-CC = "arm-linux-gnueabihf-gcc"
-CFLAGS = "-g"
-LDFLAGS = "-static -nostartfiles"
-INITIAL_SOURCE ="""
-	.global	_start
-
-_start:
-
-
-_exit:
-	b	_exit
-"""
-EXEC_EXT = "elf"
-
-CC_COMMAND = f"{CC} {CFLAGS} -o '%%s' '%%s' {LDFLAGS}"
-
-
 class Register(bass.Register):
 
 	def __init__(self, name, bank, index, format=bass.RegDisplay.SIGNED):
@@ -95,6 +77,7 @@ class Arch(bass.Arch):
 
 	def __init__(self):
 		self.regs = None
+		self.map = None
 
 	def get_name(self):
 		return "ARM"
@@ -132,6 +115,18 @@ class Arch(bass.Arch):
 			self.regs = [R, CPSR] + self.regs
 		return self.regs
 
+	def find_register(self, name):
+		"""Find a register by its name. Return None if the register cannot be
+		found."""
+		if self.map is None:
+			self.map = {}
+			for bank in self.get_registers():
+				for reg in bank.get_registers():
+					self.map[reg.get_name()] = reg
+		try:
+			return self.map[name.upper()]
+		except KeyError:
+			return None
 
 class Simulator(bass.Simulator):
 

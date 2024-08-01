@@ -762,4 +762,4 @@ if __name__ == '__main__':
 
 	# run the server
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	orc.run(Application(), dirs=[assets], debug=DEBUG)
+	orc.run(Application(), dirs=[assets], debug=False)

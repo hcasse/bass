@@ -110,6 +110,11 @@ class Arch:
 		"""Get the list of register banks."""
 		return []
 
+	def find_register(self, name):
+		"""Find a register by its name. Return None if the register cannot be
+		found."""
+		return None
+
 
 class Simulator:
 	"""Interface to the simulator."""
