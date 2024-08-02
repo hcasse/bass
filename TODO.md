@@ -43,15 +43,15 @@
 
 ## Memory Pane
 
-[ ] <enter> key performs the action
-[ ] support type of display (dec/hex/signed byte/short/long, char)
+[X] <enter> key performs the action
+[X] support type of display (dec/hex/signed byte/short/long, char)
 [ ] support several display at the same time
-[ ] support of labels
-[ ] support of registers
-[ ] proposal of labes or of registers
+[X] support of labels
+[X] support of registers
+[ ] proposal of labels or of registers
 [ ] read memory as a chunk, not byte by byte
 [ ] follow up memory with registers evolution
-
+[X] support for '+' and '-'
 
 ## Simulator
 

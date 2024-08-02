@@ -37,8 +37,9 @@ class AddressType(orc.Type):
 		else:
 			return text
 
-	def address(self, text):
+	def get_base(self, text):
 		"""Get the value as an address."""
+		text = text.strip()
 
 		# an address?
 		try:
@@ -58,6 +59,35 @@ class AddressType(orc.Type):
 
 		# unknown
 		return None
+
+
+	def address(self, text):
+		"""Get the value as an address."""
+
+		def const(text):
+			try:
+				return int(text, 16)
+			except ValueError:
+				return None
+
+		def combine(p, f):
+			base = self.get_base(text[:p])
+			offset = const(text[p+1:])
+			if base is None or offset is None:
+				return None
+			else:
+				return f(base, offset)
+
+		p = text.find('+')
+		if p >= 0:
+			return combine(p, lambda x,y: x + y)
+
+		p = text.find('-')
+		if p >= 0:
+			return combine(p, lambda x,y: x - y)
+
+		return self.get_base(text)
+
 
 ADDRESS_TYPE = AddressType()
 
