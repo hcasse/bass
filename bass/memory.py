@@ -52,7 +52,6 @@ class AddressType(orc.Type):
 			return addr
 
 		# a register?
-		print("DEBUG: use of sim =", self.sim)
 		reg = self.sim.get_arch().find_register(text)
 		if reg is not None:
 			return self.sim.get_register(reg)
@@ -180,6 +179,10 @@ class MemoryDisplayer(orc.Component):
 .bass-32 th:not(:first-child) {
 	min-width: 8em;
 }
+
+.bass-target {
+	background-color: lightblue;
+}
 """,
 		script = """
 function bass_memory_update(msg) {
@@ -231,6 +234,7 @@ function bass_memory_update(msg) {
 		self.type = type
 		if type.clazz is not None:
 			self.add_class(type.clazz)
+		self.target = (base - self.base) // type.size
 
 		# generate the content
 		self.gen_mem()
@@ -253,11 +257,14 @@ function bass_memory_update(msg) {
 			out.write(f'<th>{i:1x}</th>')
 		out.write('</tr>')
 		i = 0
-		print("DEBUG:", self.mem)
 		while i < self.size:
 			out.write(f'<tr><td>{self.base + i:08x}</td>')
 			for j in range(16//self.type.size):
-				out.write(f'<td>{self.type.display(self.mem[i + j])}</td>')
+				if i + j == self.target:
+					cls = ' class="bass-target"'
+				else:
+					cls = ''
+				out.write(f'<td{cls}>{self.type.display(self.mem[i + j])}</td>')
 			out.write('</tr>')
 			i += 16 // self.type.size
 		out.write('</tbody></table>')
@@ -267,7 +274,6 @@ function bass_memory_update(msg) {
 		if self.mem is not None:
 			for i in range(self.size):
 				self.mem[i] = self.type.load(self.sim, self.base + i*self.type.size)
-				print(f"DEBUG: address {i}: {self.base + i*self.type.size:08x} -> {self.mem[i]}")
 			buf = Buffer()
 			self.gen_content(buf)
 			self.set_content(str(buf))
@@ -361,7 +367,6 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 		self.selector.enable()
 		ADDRESS_TYPE.set_sim(sim)
 		self.mdisplay.start_sim(sim)
-		print("DEBUG: sim =", sim)
 
 	def on_sim_stop(self, session, sim):
 		self.selector.disable()
