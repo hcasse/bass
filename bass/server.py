@@ -454,8 +454,7 @@ class Session(orc.Session):
 		else:
 
 			# log user
-			user = User(self.get_application(), DEBUG_USER)
-			user.load()
+			user = self.get_application().get_user(DEBUG_USER)
 			self.setup_user(user)
 
 			# open the project
@@ -535,8 +534,14 @@ class Session(orc.Session):
 
 	def setup_user(self, user):
 		"""Set the user in the main window."""
+		user.connect(self)
 		self.user = user
 		self.user_label.set_text(user.get_name())
+
+	def cleanup_user(self):
+		"""Cleanup the current user."""
+		self.user.disconnect(self)
+		self.user = None
 
 	def login_user(self, console):
 		""" Try to log-in a user reacting to the login dialog."""
@@ -545,9 +550,8 @@ class Session(orc.Session):
 		if not self.get_application().check_password(name, pwd):
 			self.login_dialog.error("Log-in error!")
 		else:
-			user = User(self.get_application(), name)
 			try:
-				user.load()
+				user = self.get_application().get_user(name)
 				self.setup_user(user)
 				self.login_dialog.hide()
 				self.select_project()
@@ -562,7 +566,7 @@ class Session(orc.Session):
 	def logout(self, interface):
 		"""Stop the current session."""
 		def after():
-			self.user = None
+			self.cleanup_user()
 			self.login_dialog.show()
 		self.cleanup_project(after)
 
@@ -580,10 +584,10 @@ class Session(orc.Session):
 			if not os.path.exists(user_dir):
 				break
 			i += 1
-		user = User(self.get_application(), name)
 		try:
-			user.create()
-			self.setup_user(self.user)
+			user = User(name)
+			self.get_application().add_user(user)
+			self.setup_user(user)
 			self.login_dialog.hide()
 			self.select_project()
 		except DataException as e:
@@ -603,10 +607,9 @@ class Session(orc.Session):
 		if self.get_application().exists_user(name):
 			self.register_dialog.user.update_observers()
 			return
-		user = User(self.get_application(), name, email=~self.register_dialog.email)
+		user = User(name, email=~self.register_dialog.email)
 		try:
-			user.create()
-			self.get_application().add_password(name, ~self.register_dialog.pwd)
+			self.get_application().add_user(user, ~self.register_dialog.pwd)
 			self.setup_user(user)
 			self.register_dialog.hide()
 			self.select_project()
@@ -659,6 +662,7 @@ class Application(orc.Application):
 
 		self.data_dir = os.path.join(os.getcwd(), "data")
 		self.base_dir = os.path.dirname(__file__)
+		self.users = {}
 
 		# load passwords
 		self.pwd_path = os.path.join(self.data_dir, "passwords.txt")
@@ -670,7 +674,7 @@ class Application(orc.Application):
 
 	def log(self , msg):
 		"""Log a message."""
-		print(f"LOG: {datetime.today()}: {msg}\n")
+		print(f"LOG: {datetime.today()}: {msg}")
 
 	def get_base_dir(self):
 		"""Get the directory containing code and assets."""
@@ -688,7 +692,7 @@ class Application(orc.Application):
 		"""Save passwords."""
 		with open(self.pwd_path, "w") as out:
 			for (user, pwd) in self.passwords.items():
-				out.write(f"{user}:{pwd}\n" % (user, pwd))
+				out.write(f"{user}:{pwd}\n")
 
 	def load_passwords(self):
 		"""Load passwords."""
@@ -745,6 +749,31 @@ class Application(orc.Application):
 	def exists_user(self, user):
 		"""Test if a user exists."""
 		return user in self.passwords
+
+	def get_user(self, name):
+		"""Get a user by its name (possibly loading it).
+		May raise a DataException if there is an error during user loading."""
+		try:
+			return self.users[name]
+		except KeyError:
+			user = User(name)
+			user.app = self
+			if not os.path.exists(user.get_path()):
+				raise DataException(f"User {name} does not exists!")
+			user.load()
+			self.users[name] = user
+			return user
+
+	def add_user(self, user, password=None):
+		"""Add a new user to the application. Raises DataException if file
+		structure cannot be created. The password must be None for anonymous
+		user."""
+		user.app = self
+		user.create()
+		self.users[user.get_name()] = user
+		if password is not None:
+			self.add_password(user.get_name(), password)
+
 
 if __name__ == '__main__':
 

@@ -49,7 +49,6 @@ class RegisterDialog(dialog.Base):
 		self.pwd = var("", label="Password")
 		self.repwd = var("", label="Re-type password")
 		self.email = var("", label="EMail")
-		self.msg = MessageLabel("")
 
 		enable = \
 			if_error(matches(self.user, "[a-zA-Z0-9_.-]+"),
@@ -62,16 +61,17 @@ class RegisterDialog(dialog.Base):
 				   "Password and re-typed different!")
 		register = Action(fun=server.create_user, enable=enable, label="Register")
 		cancel = Action(fun=server.cancel_user, label="Cancel")
+		self.msg = MessageLabel([enable])
 
 		main = VGroup([
 			Form([
 				Field(var=self.user),
 				PasswordField(var=self.pwd),
 				PasswordField(var=self.repwd),
-				EmailField(var=self.email)
+				EmailField(var=self.email),
 			]),
+			self.msg,
 			HGroup([hspring(), Button(cancel), Button(register)]),
-			self.msg
 		])
 		dialog.Base.__init__(self, page, main, title="Register")
 

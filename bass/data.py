@@ -332,12 +332,15 @@ class Project:
 class User:
 	"""A user."""
 
-	def __init__(self, app, name, email=""):
-		self.app = app
+	def __init__(self, name, email=None):
+		if email is None:
+			email = ""
+		self.app = None
 		self.name = name
 		self.email = email
 		self.projects = []
 		self.path = None
+		self.sessions = []
 
 	def get_name(self):
 		return self.name
@@ -395,3 +398,15 @@ class User:
 		except DataException as e:
 			shutil.rmtree(self.path)
 			error(self.app, str(e))
+
+	def connect(self, session):
+		"""Connect a user to a session."""
+		self.sessions.append(session)
+
+	def disconnect(self, session):
+		"""Disconnect the user from a session."""
+		self.sessions.remove(session)
+
+	def get_sessions(self):
+		"""Get sessions connected to the user."""
+		return self.sessions
