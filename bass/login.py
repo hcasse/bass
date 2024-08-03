@@ -43,18 +43,18 @@ class LoginDialog(dialog.Base):
 
 class RegisterDialog(dialog.Base):
 
-	def __init__(self, page, on_cancel, on_apply, user=None):
+	def __init__(self, page, on_cancel, on_apply, config=False):
 		"""Build a register dialog with functions on_cancel and on_apply called
-		depending on user condition. If user is not None, a configuration
+		depending on user condition. If configis True, a configuration
 		dialog is built."""
 
 		def check_user():
 			return not page.get_application().exists_user(~self.user)
 
-		self.user = var("" if user is None else user.get_name(), label="User")
+		self.user = var("", label="User")
 		self.pwd = var("", label="Password")
 		self.repwd = var("", label="Re-type password")
-		self.email = var("" if user is None else user.get_email(), label="EMail")
+		self.email = var("", label="EMail")
 
 		good_pwd = \
 			if_error(is_password(self.pwd),
@@ -62,7 +62,7 @@ class RegisterDialog(dialog.Base):
 			if_error(equals(self.pwd, self.repwd),
 				   "Password and re-typed different!")
 
-		if user is None:
+		if not config:
 			enable = \
 				if_error(matches(self.user, "[a-zA-Z0-9_.-]+"),
 					"User allowed characters: a-z, A-Z, 0-9, ., _, -.") & \
@@ -73,13 +73,13 @@ class RegisterDialog(dialog.Base):
 			enable = \
 				is_null(self.pwd) | good_pwd
 		register = Action(fun=on_apply, enable=enable,
-			label="Register" if user is None else "Update")
+			label="Register" if not config else "Update")
 		cancel = Action(fun=on_cancel, label="Cancel")
 		self.msg = MessageLabel([enable])
 
 		main = VGroup([
 			Form([
-				Field(var=self.user, read_only=user is not None),
+				Field(var=self.user, read_only=config),
 				PasswordField(var=self.pwd),
 				PasswordField(var=self.repwd),
 				EmailField(var=self.email),
@@ -88,7 +88,14 @@ class RegisterDialog(dialog.Base):
 			HGroup([hspring(), Button(cancel), Button(register)]),
 		])
 		dialog.Base.__init__(self, page, main,
-			title="Register" if user is None else "Configure user")
+			title="Register" if not config else "Configure user")
+
+	def set_user(self, user):
+		"""Set the current user."""
+		self.user.set(user.get_name())
+		self.pwd.set("")
+		self.repwd.set("")
+		self.email.set(user.get_email())
 
 	def show(self):
 		self.msg.clear_message()

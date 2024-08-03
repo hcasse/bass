@@ -591,7 +591,8 @@ class Session(orc.Session):
 
 		if self.user_config_dialog is None:
 			self.user_config_dialog = RegisterDialog(self.page, cancel, apply,
-				self.user)
+				True)
+		self.user_config_dialog.set_user(self.user)
 		self.user_config_dialog.show()
 
 	def logout(self, interface):

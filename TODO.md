@@ -6,20 +6,22 @@
 [ ] Resizing for Console/editor-memory.
 [ ] Resizing register and the rest.
 [ ] Support for board input-output.
-[ ] Project menu :
-	* delete
-	[x] open/new
-	* rename
-	* download
-	* open file
-	* delete file
-[ ] User menu:
-	* configure
-	* download all projects
 [ ] Display more on about.
 [ ] Add UT3 publicity.
 [ ] Provide help.
 [ ] Save all regularly and at end of session.
+
+Project menu :
+[ ] delete
+[X] open/new
+[ ] rename
+[ ] download
+[ ] open file
+[ ] delete file
+
+User menu:
+[X] configure
+[ ] download all projects
 
 
 ## Register Pane
