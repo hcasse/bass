@@ -129,6 +129,7 @@ class Session(orc.Session):
 		self.login_dialog = None
 		self.register_dialog = None
 		self.select_dialog = None
+		self.user_config_dialog = None
 
 	def get_current_addr(self):
 		"""Get the variable containing the current address."""
@@ -561,7 +562,37 @@ class Session(orc.Session):
 
 	def config_user(self, interface):
 		"""Change configuration of the user."""
-		pass
+
+		def apply(interface):
+
+			# save user
+			save = False
+			email = self.user_config_dialog.get_email()
+			if email != self.user.get_email():
+				self.user.set_email(email)
+				save = True
+			if save:
+				try:
+					self.user.save()
+				except DataException as e:
+					self.user_config_dialog.error(f"cannot save: {e}")
+					return
+
+			# save password
+			pwd = self.user_config_dialog.get_password()
+			if pwd:
+				self.get_application().add_password(self.user.get_name(), pwd)
+
+			# close all
+			self.user_config_dialog.hide()
+
+		def cancel(interface):
+			self.user_config_dialog.hide()
+
+		if self.user_config_dialog is None:
+			self.user_config_dialog = RegisterDialog(self.page, cancel, apply,
+				self.user)
+		self.user_config_dialog.show()
 
 	def logout(self, interface):
 		"""Stop the current session."""
@@ -573,7 +604,8 @@ class Session(orc.Session):
 	def register_user(self, console):
 		self.login_dialog.hide()
 		if self.register_dialog is None:
-			self.register_dialog = RegisterDialog(self, self.page)
+			self.register_dialog = RegisterDialog(self.page, self.cancel_user,
+				self.create_user)
 		self.register_dialog.show()
 
 	def login_anon(self, console):

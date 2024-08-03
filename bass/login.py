@@ -4,7 +4,7 @@
 from orchid import \
 	HGroup, VGroup, var, Action, ListView, MessageLabel, Field, \
 	Button, PasswordField, Label, hspring, matches, if_error, equals, \
-	Predicate, EmailField, ListVar, Form, not_null, is_password, Key
+	Predicate, EmailField, ListVar, Form, not_null, is_password, Key, is_null
 from orchid import dialog
 
 class LoginDialog(dialog.Base):
@@ -43,29 +43,43 @@ class LoginDialog(dialog.Base):
 
 class RegisterDialog(dialog.Base):
 
-	def __init__(self, server, page):
-		self.server = server
-		self.user = var("", label="User")
+	def __init__(self, page, on_cancel, on_apply, user=None):
+		"""Build a register dialog with functions on_cancel and on_apply called
+		depending on user condition. If user is not None, a configuration
+		dialog is built."""
+
+		def check_user():
+			return not page.get_application().exists_user(~self.user)
+
+		self.user = var("" if user is None else user.get_name(), label="User")
 		self.pwd = var("", label="Password")
 		self.repwd = var("", label="Re-type password")
-		self.email = var("", label="EMail")
+		self.email = var("" if user is None else user.get_email(), label="EMail")
 
-		enable = \
-			if_error(matches(self.user, "[a-zA-Z0-9_.-]+"),
-				"User allowed characters: a-z, A-Z, 0-9, ., _, -.") & \
+		good_pwd = \
 			if_error(is_password(self.pwd),
 				"Password requires 8 characters: 1 lower, 1 upper, 1 digit, 1 other.") & \
-			if_error(Predicate([self.user], fun=self.check_user),
-				"User already exists!") & \
 			if_error(equals(self.pwd, self.repwd),
 				   "Password and re-typed different!")
-		register = Action(fun=server.create_user, enable=enable, label="Register")
-		cancel = Action(fun=server.cancel_user, label="Cancel")
+
+		if user is None:
+			enable = \
+				if_error(matches(self.user, "[a-zA-Z0-9_.-]+"),
+					"User allowed characters: a-z, A-Z, 0-9, ., _, -.") & \
+				if_error(Predicate([self.user], fun=check_user),
+					"User already exists!") & \
+				good_pwd
+		else:
+			enable = \
+				is_null(self.pwd) | good_pwd
+		register = Action(fun=on_apply, enable=enable,
+			label="Register" if user is None else "Update")
+		cancel = Action(fun=on_cancel, label="Cancel")
 		self.msg = MessageLabel([enable])
 
 		main = VGroup([
 			Form([
-				Field(var=self.user),
+				Field(var=self.user, read_only=user is not None),
 				PasswordField(var=self.pwd),
 				PasswordField(var=self.repwd),
 				EmailField(var=self.email),
@@ -73,18 +87,23 @@ class RegisterDialog(dialog.Base):
 			self.msg,
 			HGroup([hspring(), Button(cancel), Button(register)]),
 		])
-		dialog.Base.__init__(self, page, main, title="Register")
+		dialog.Base.__init__(self, page, main,
+			title="Register" if user is None else "Configure user")
 
 	def show(self):
 		self.msg.clear_message()
 		dialog.Base.show(self)
 
-	def check_user(self):
-		return not self.server.get_application().exists_user(~self.user)
-
 	def error(self, msg):
 		self.msg.show_error(msg)
 
+	def get_password(self):
+		"""Get the typed password."""
+		return ~self.pwd
+
+	def get_email(self):
+		"""Get the typed email."""
+		return ~self.email
 
 class SelectDialog(dialog.Base):
 

@@ -345,6 +345,14 @@ class User:
 	def get_name(self):
 		return self.name
 
+	def get_email(self):
+		"""Get the email of the user."""
+		return self.email
+
+	def set_email(self, email):
+		"""Change the mail of the user."""
+		self.email = email
+
 	def get_path(self):
 		"""Get the directory of the user."""
 		if self.path is None:
