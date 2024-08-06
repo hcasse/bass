@@ -22,6 +22,7 @@ from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
+from bass.dialogs import RenameDialog
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -130,6 +131,11 @@ class Session(orc.Session):
 		self.register_dialog = None
 		self.select_dialog = None
 		self.user_config_dialog = None
+		self.rename_dialog = None
+
+	def get_page(self):
+		"""Get the main page."""
+		return self.page
 
 	def get_current_addr(self):
 		"""Get the variable containing the current address."""
@@ -525,7 +531,19 @@ class Session(orc.Session):
 		self.cleanup_project(after)
 
 	def rename_project(self, interface):
-		pass
+
+		def rename(name):
+			try:
+				self.project.rename(name)
+				self.user.save()
+				self.project_label.set_text(name)
+				self.rename_dialog.hide()
+			except DataException as e:
+				self.rename_dialog.error(e)
+
+		if self.rename_dialog is None:
+			self.rename_dialog = RenameDialog(self, rename)
+		self.rename_dialog.show()
 
 	def delete_project(self, interface):
 		pass

@@ -1,6 +1,12 @@
 """Main module of the BASS."""
 
 from enum import Enum
+from orchid import matches
+
+
+def project_name_pred(var):
+	"""Build a predicate for a project name."""
+	return matches(var, "[a-zA-Z0-9_+=-]+")
 
 class MessageException(Exception):
 	"""Base class of exception supporting a message."""

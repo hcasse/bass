@@ -14,7 +14,7 @@
 Project menu :
 [ ] delete
 [X] open/new
-[ ] rename
+[X] rename
 [ ] download
 [ ] open file
 [ ] delete file

@@ -6,6 +6,7 @@ from orchid import \
 	Button, PasswordField, Label, hspring, matches, if_error, equals, \
 	Predicate, EmailField, ListVar, Form, not_null, is_password, Key, is_null
 from orchid import dialog
+from bass import project_name_pred
 
 class LoginDialog(dialog.Base):
 
@@ -130,7 +131,7 @@ class SelectDialog(dialog.Base):
 		create_project = Action(
 				fun = server.create_project,
 				label = "Create",
-				enable =  create_enable
+				enable =  create_enable & project_name_pred(self.name)
 			)
 
 		open_enable = not_null(self.selected_project)

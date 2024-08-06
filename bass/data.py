@@ -102,28 +102,6 @@ class File:
 		path = self.get_path()
 		os.remove(path)
 
-	def rename(self, new_name, editeur, text):
-		"""
-			Fonction permettant de renommer un fichier.
-
-			  @param new_name : Le nouveau nom du fichier.
-			  @param text : Le contenu à sauvegarder dans le fichier renommé.
-		"""
-		if not os.path.exists(self.get_path):
-			self.project.user.session.event_error("Le fichier "+self.name+" n'a pas été trouvé.")
-		elif os.path.exists(os.path.join(self.project.get_path(), new_name)):
-			self.project.user.session.event_error(
-				f"Impossible de nommer le fichier {new_name}. \
-				Ce projet contient déjà un fichier avec ce nom.")
-		else:
-			self.delete()
-			self.name = new_name
-			self.save(text)
-			session = self.project.user.session
-			session.loadProjectFilesEditor()
-			session.tabEditeurDisassembly.select(self.currentFint)
-			session.event_hideRenameFile()
-
 
 class Template:
 	"""Represents a template."""
@@ -249,11 +227,6 @@ class Project:
 			return True
 		return False
 
-	def rename_project(self, new_name):
-		"""Rename a project."""
-		os.rename(self.get_path(), os.path.join(self.user.get_path(), new_name))
-		self.name = new_name
-
 	def create(self):
 		"""Create from a file name."""
 
@@ -327,6 +300,20 @@ class Project:
 	def get_arch(self):
 		"""Get the architecture used in this project."""
 		return arm.Simulator.get_arch()
+
+	def rename(self, name):
+		"""Change the name of the project."""
+		old_name = self.name
+		old_path = self.get_path()
+		self.name = name
+		self.path = None
+		new_path = self.get_path()
+		try:
+			os.rename(old_path, new_path)
+		except OSError as e:
+			self.name = old_name
+			self.path = None
+			raise DataException(str(e))
 
 
 class User:
