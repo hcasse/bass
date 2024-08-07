@@ -47,3 +47,27 @@ class RenameDialog(dialog.Base):
 
 	def error(self, msg):
 		self.msg.show_error(msg)
+
+
+class DeleteDialog(dialog.Answer):
+	"""Dialog asking the user to validate deletion of current project."""
+
+	def __init__(self, session, delete):
+		"""Build the dialog. Delete function is called is case of validation."""
+
+		def on_close(dialog, answer):
+			self.hide()
+			if answer == 0:
+				delete()
+
+		dialog.Answer.__init__(
+			self,
+			session.get_page(),
+			f"Do you want to delete {session.get_project().get_name()}?",
+			buttons = ["Delete", "Cancel"],
+			title="Project Deletion",
+			on_close=on_close
+		)
+
+		self.get_button(0).set_style("color", "red")
+

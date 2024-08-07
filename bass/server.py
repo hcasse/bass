@@ -22,7 +22,7 @@ from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
-from bass.dialogs import RenameDialog
+from bass.dialogs import RenameDialog, DeleteDialog
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -132,6 +132,7 @@ class Session(orc.Session):
 		self.select_dialog = None
 		self.user_config_dialog = None
 		self.rename_dialog = None
+		self.delete_dialog = None
 
 	def get_page(self):
 		"""Get the main page."""
@@ -382,7 +383,7 @@ class Session(orc.Session):
 			orc.Menu([
 				orc.Button(self.open_new_project_action),
 				orc.Button(self.rename_project_action),
-				orc.Button(self.delete_project_action)
+				orc.Button(self.delete_project_action).set_style("color", "red")
 			]),
 			image = orc.Icon(orc.IconType.PROJECT)
 		)
@@ -546,7 +547,20 @@ class Session(orc.Session):
 		self.rename_dialog.show()
 
 	def delete_project(self, interface):
-		pass
+		"""Display dialog to delete the current project and perform it."""
+		project = self.project
+
+		def after():
+			self.user.remove_project(project)
+			self.select_project()
+
+		def on_delete():
+			self.cleanup_project(after)
+
+		if self.delete_dialog is None:
+			self.delete_dialog = DeleteDialog(self, on_delete)
+
+		self.delete_dialog.show()
 
 
 	# user management

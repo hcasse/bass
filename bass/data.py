@@ -219,13 +219,10 @@ class Project:
 			self.app.log(f"no template named {tname}")
 			self.template = Template(self.app, tname)
 
-	def delete_project(self):
+	def delete(self):
 		"""Remove a project."""
 		path = self.get_path()
-		if os.path.exists(path):
-			shutil.rmtree(path)
-			return True
-		return False
+		shutil.rmtree(path)
 
 	def create(self):
 		"""Create from a file name."""
@@ -359,7 +356,8 @@ class User:
 		"""Remove a project from the user."""
 		if project in self.projects:
 			self.projects.remove(project)
-			project.delete_project()
+			project.delete()
+			self.save()
 
 	def get_projects(self):
 		return self.projects

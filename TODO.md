@@ -12,7 +12,7 @@
 [ ] Save all regularly and at end of session.
 
 Project menu :
-[ ] delete
+[X] delete
 [X] open/new
 [X] rename
 [ ] download
