@@ -312,6 +312,18 @@ class Project:
 			self.path = None
 			raise DataException(str(e))
 
+	def archive(self, to):
+		"""Archive the content of the project into the "to" file. "to" should be
+		an absolute path. Raise DataException if there is an error."""
+		to = os.path.abspath(to)
+		files = " ".join(os.path.join(self.get_name(), file)
+			for file in self.template.install)
+		cmd = f"tar cvfz {to} {files}"
+		print("DEBUG: cmd =", cmd)
+		res = subprocess.run(cmd, shell=True, cwd=self.user.get_path())
+		if res.returncode != 0:
+			raise DataException("cannot build the archive!")
+
 
 class User:
 	"""A user."""

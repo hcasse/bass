@@ -4,7 +4,7 @@
 from orchid import \
 	HGroup, VGroup, Var, Action, Field, Key, hspring, Button, Predicate, \
 		MessageLabel
-from orchid import dialog
+from orchid import dialog, MessageType
 from bass import project_name_pred
 
 class RenameDialog(dialog.Base):
@@ -70,4 +70,16 @@ class DeleteDialog(dialog.Answer):
 		)
 
 		self.get_button(0).set_style("color", "red")
+
+
+class ErrorDialog(dialog.Message):
+	"""Dialog to display an error."""
+
+	def __init__(self, page):
+		dialog.Message.__init__(self, page, "", title="Error", type=MessageType.ERROR)
+
+	def show_error(self, message):
+		self.set_message(message)
+		self.show()
+
 

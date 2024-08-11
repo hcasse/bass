@@ -22,7 +22,7 @@ from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
-from bass.dialogs import RenameDialog, DeleteDialog
+from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -105,6 +105,8 @@ class Session(orc.Session):
 			label="Open/New", help="Close current project and open/create another.")
 		self.rename_project_action = orc.Action(self.rename_project,
 			label="Rename", help="Rename the current project.")
+		self.download_project_action = orc.Action(self.download_project,
+			label="Download", help="Download the source files of the project.")
 		self.delete_project_action = orc.Action(self.delete_project,
 			label="Delete", help="Delete the current project.")
 
@@ -133,6 +135,7 @@ class Session(orc.Session):
 		self.user_config_dialog = None
 		self.rename_dialog = None
 		self.delete_dialog = None
+		self.error_dialog = None
 
 	def get_page(self):
 		"""Get the main page."""
@@ -383,6 +386,7 @@ class Session(orc.Session):
 			orc.Menu([
 				orc.Button(self.open_new_project_action),
 				orc.Button(self.rename_project_action),
+				orc.Button(self.download_project_action),
 				orc.Button(self.delete_project_action).set_style("color", "red")
 			]),
 			image = orc.Icon(orc.IconType.PROJECT)
@@ -562,6 +566,18 @@ class Session(orc.Session):
 
 		self.delete_dialog.show()
 
+	def download_project(self, interface):
+		"""Prepare an archive of the project and download it."""
+		arc_path = os.path.join(self.user.get_path(), f"{self.project.get_name()}.tgz")
+		try:
+			self.project.archive(arc_path)
+		except DataException as e:
+			self.show_error(str(e))
+			return
+		url = f"/download/{self.user.get_name()}/{os.path.basename(arc_path)}"
+		self.page.publish_file(url, arc_path, mime="application/gzip^")
+		self.page.open_url(url, "_blank")
+
 
 	# user management
 
@@ -712,6 +728,14 @@ class Session(orc.Session):
 			self.select_dialog.error(f"cannot open {project.get_name()} project: {e}")
 
 
+	# interface implementation
+
+	def show_error(self, message):
+		if self.error_dialog is None:
+			self.error_dialog = ErrorDialog(self.page)
+		self.error_dialog.show_error(message)
+
+
 class Application(orc.Application):
 	"""BASS Application"""
 	def __init__(self):
@@ -856,4 +880,4 @@ if __name__ == '__main__':
 
 	# run the server
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	orc.run(Application(), dirs=[assets], debug=False)
+	orc.run(Application(), dirs=[assets], debug=True)
