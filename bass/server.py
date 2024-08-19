@@ -33,21 +33,6 @@ DEBUG_USER = None
 DEBUG_PROJECT = None
 
 
-class EditorTab(CodeEditor, bass.ApplicationPane):
-	"""Class for code edition (embed interaction with session)."""
-
-	def __init__(self, file):
-		self.file = file
-		text = file.load()
-		CodeEditor.__init__(self, text=text)
-
-	def on_save(self, session, on_done):
-		def save(self, content):
-			self.file.save(content)
-			on_done()
-		self.get_content(save)
-
-
 class Session(orc.Session):
 
 	AUTO_BP = { "main", "_exit" }
@@ -499,7 +484,7 @@ class Session(orc.Session):
 
 		# setup editors
 		for file in project.get_sources():
-			editor = EditorTab(file)
+			editor = CodeEditor(file)
 			self.editors.append_tab(editor,	label=file.get_name())
 			self.panes.append(editor)
 			editor.on_begin(self)
@@ -844,11 +829,11 @@ class Application(orc.Application):
 		May raise a DataException if there is an error during user loading."""
 		try:
 			return self.users[name]
-		except KeyError:
+		except KeyError as e:
 			user = User(name)
 			user.app = self
 			if not os.path.exists(user.get_path()):
-				raise DataException(f"User {name} does not exists!")
+				raise DataException(f"User {name} does not exists!") from e
 			user.load()
 			self.users[name] = user
 			return user

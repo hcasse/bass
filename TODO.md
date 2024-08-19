@@ -36,11 +36,14 @@ User menu:
 
 [ ] support execution in editor.
 [ ] support breakpoint in editor
-[ ] add toolbar for:
-	* undo/redo
-	* lookup/replace
-	* cut, copy, paster
 [ ] only save if there is a modification.
+
+Add toolbar for:
+[X] save
+[X] undo/redo
+[X] lookup
+[X] replace
+[X] cut, copy, paste
 
 
 ## Memory Pane

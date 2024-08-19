@@ -1,6 +1,5 @@
 """ARM configuration for bass."""
 
-import os.path
 import armgliss as arm
 import bass
 

@@ -1,6 +1,7 @@
 """Memory display pane."""
 
 import orchid as orc
+from orchid import not_null
 from orchid.util import Buffer
 import bass
 
@@ -16,7 +17,6 @@ class AddressType(orc.Type):
 	def set_sim(self, sim):
 		"""Set the current simulator."""
 		self.sim = sim
-		print("DEDUG: set sim =", sim)
 
 	def set_disasm(self, disasm):
 		self.disasm = disasm
@@ -110,10 +110,10 @@ class Displays:
 	"""Displays for the memory."""
 
 	SPEC_CHARS = {
-		 8: u"\u21a4",
-		 9: u"\u21b9",
-		10: u"\u23ce",
-		32: u"\u2423"
+		 8: "\u21a4",
+		 9: "\u21b9",
+		10: "\u23ce",
+		32: "\u2423"
 	}
 
 	@staticmethod
@@ -249,6 +249,7 @@ function bass_memory_update(msg) {
 		self.add_class("bass-memory")
 		self.changes = set()
 		self.type = None
+		self.target = None
 
 	def show_mem(self, base, size, type):
 		"""Show the given memory."""
@@ -364,7 +365,7 @@ class MemoryPane(orc.VGroup, bass.ApplicationPane):
 		self.size = orc.Var(64,
 			help="Size of shown memory (in bytes).")
 		add_action = orc.Action(self.add_chunk,
-			enable=(self.addr != None) & (self.size > 0),
+			enable=not_null(self.addr) & (self.size > 0),
 			icon=orc.Icon(orc.IconType.CHECK),
 			help="Display the configured chunk of memory")
 		self.selector = orc.HGroup([

@@ -105,6 +105,14 @@ table.register-pane tr td:nth-child(2) {
 
 	def __init__(self):
 
+		def is_editable(row, col):
+			return col == 1 \
+				and self.sim is not None  \
+				and self.regs[row].is_editable()
+
+		def parse(row, col, val):
+			return self.regs[row].parse(val)
+
 		# prepare actions
 		self.default_action = orc.Action(
 			lambda i: self.show_fmt(None), label="Default")
@@ -126,8 +134,8 @@ table.register-pane tr td:nth-child(2) {
 
 		# init parent
 		TableView.__init__(self, [], no_header=True, model=self.MODEL,
-			format=self.format, parse=self.parse,
-			is_editable=self.is_editable, context_toolbar=toolbar)
+			format=self.format, parse=parse,
+			is_editable=is_editable, context_toolbar=toolbar)
 		ApplicationPane.__init__(self)
 		self.disable()
 
@@ -156,22 +164,12 @@ table.register-pane tr td:nth-child(2) {
 	def show_hex(self, interface):
 		pass
 
-	def is_editable(self, row, col):
-		"""Test if the given cell is editable."""
-		return col == 1 \
-			and self.sim is not None  \
-			and self.regs[row].is_editable()
-
 	def format(self, row, col, val):
 		"""Format the value according to the register."""
 		if col == 0:
 			return val
 		else:
 			return self.regs[row].format()
-
-	def parse(self, row, col, val):
-		"""Parse the cell according to the register."""
-		return self.regs[row].parse(val)
 
 	def on_project_set(self, session, project):
 		"""Set the current architecture."""

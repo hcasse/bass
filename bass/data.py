@@ -310,7 +310,7 @@ class Project:
 		except OSError as e:
 			self.name = old_name
 			self.path = None
-			raise DataException(str(e))
+			raise DataException(str(e)) from e
 
 	def archive(self, to):
 		"""Archive the content of the project into the "to" file. "to" should be
