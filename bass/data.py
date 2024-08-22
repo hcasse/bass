@@ -117,6 +117,7 @@ class Template:
 		self.arch = "arm"
 		self.path = os.path.join(app.get_template_dir(), self.name)
 		self.install = []
+		self.board = None
 
 	def get_name(self):
 		"""Get the name of the template."""
@@ -137,6 +138,16 @@ class Template:
 		self.sources = config.get("template", "sources", fallback="main.s").split(";")
 		self.install = config.get("template", "install", fallback="main.s").split(";")
 		self.arch = config.get("template", "arch", fallback="arm")
+		self.board = config.get("template", "board", fallback=None)
+
+	def has_board(self):
+		"""Test if the template has a board."""
+		return self.board is not None
+
+	def get_board_path(self):
+		"""Get the path of the board."""
+		assert self.board is not None
+		return os.path.join(self.path, self.board)
 
 	def instantiate(self, to):
 		"""Install the template in the to directory. May raise DataException."""
@@ -270,7 +281,9 @@ class Project:
 	def new_sim(self):
 		"""Start simulator for the project executable.
 		Return the simulator. If there is an error, raises a SimException."""
-		return arm.Simulator(self.get_exec_path())
+		sim = arm.Simulator()
+		sim.load(self.get_exec_path())
+		return sim
 
 	def get_disasm(self):
 		"""Get the disassembly of the current program."""

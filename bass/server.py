@@ -177,14 +177,17 @@ class Session(orc.Session):
 		"""Start the simulation."""
 
 		# start the simulator
-		try:
-			self.sim = self.get_project().new_sim()
-		except bass.SimException as e:
-			self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
-			return
+		if self.sim is None:
+			try:
+				self.sim = self.get_project().new_sim()
+			except bass.SimException as e:
+				self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
+				return
+			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
+		else:
+			self.sim.reset()
 
 		# prepare simulation
-		self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
 		self.started.set(True)
 		self.timeout_button.enable()
 		self.date.set(0)
@@ -205,8 +208,6 @@ class Session(orc.Session):
 			self.pause(None)
 
 		# stop the simulator
-		self.sim.release()
-		self.sim = None
 		self.started.set(False)
 		self.console.append(orc.text(orc.INFO, "Stop simulation."))
 		self.timeout_button.disable()
@@ -220,7 +221,7 @@ class Session(orc.Session):
 		self.playstop_action.set_icon(self.start_icon)
 
 	def playstop(self, interface):
-		if self.sim is not None:
+		if ~self.started:
 			self.stop_sim()
 		else:
 			self.start_sim()
@@ -477,6 +478,11 @@ class Session(orc.Session):
 
 	def setup_project(self, project):
 		"""Setup the project in the main window."""
+
+		# clean simulator
+		if self.sim is not None:
+			self.sim.release()
+			self.sim = None
 
 		# display project
 		self.project = project
@@ -865,4 +871,4 @@ if __name__ == '__main__':
 
 	# run the server
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	orc.run(Application(), dirs=[assets], debug=True)
+	orc.run(Application(), dirs=[assets], debug=False)

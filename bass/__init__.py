@@ -125,10 +125,13 @@ class Arch:
 class Simulator:
 	"""Interface to the simulator."""
 
-	def __init__(self, path):
-		"""Build the simulator with the given path for the executable.
-		If there is an error, raises a SimException."""
-		self.exec_path = path
+	def load(self, path):
+		"""Load the executable with the passed path."""
+		pass
+
+	def reset(self):
+		"""Reset the simulator."""
+		pass
 
 	def release(self):
 		"""Release the simulator."""

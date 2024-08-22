@@ -131,8 +131,10 @@ class Simulator(bass.Simulator):
 
 	ARCH = None
 
-	def __init__(self, path):
-		bass.Simulator.__init__(self, path)
+	def __init__(self):
+		bass.Simulator.__init__(self)
+
+		# initialize all
 		self.labels = None
 		self.breaks = []
 		self.pf = None
@@ -143,28 +145,28 @@ class Simulator(bass.Simulator):
 		self.mem = None
 		self.banks =  None
 		self.date = 0
-		self.path = path
-		self.make()
+		self.path = None
 
-	def make(self):
-		"""Make the simulator. May raise SimException."""
-
-		# loader the executable
+		# build the simulator
 		self.pf = arm.new_platform()
 		self.mem = arm.get_memory(self.pf, 0)
+		self.state = arm.new_state(self.pf)
+		self.sim = arm.new_sim(self.state, 0, 0)
+
+	def load(self, path):
+		self.path = path
 		self.loader = arm.loader_open(self.path)
 		if self.loader is None:
 			raise bass.SimException(f"cannot load {self.path}")
 		arm.loader_load(self.loader, self.pf)
 		self.start = arm.loader_start(self.loader)
-
-		# prepare the simulator
-		self.state = arm.new_state(self.pf)
-		self.sim = arm.new_sim(self.state, self.start, self.get_label("_start"))
+		arm.set_next_address(self.sim, self.start)
 
 	def reset(self):
-		self.release()
-		self.make()
+		arm.reset_platform(self.pf)
+		arm.reset_state(self.state)
+		if self.path is not None:
+			self.load(self.path)
 
 	def release(self):
 		self.pf = None
