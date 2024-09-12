@@ -4,6 +4,7 @@
 """BASS Application."""
 
 import argparse
+import configparser
 from datetime import datetime
 import os
 import os.path
@@ -31,6 +32,7 @@ LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
 DEBUG = False
 DEBUG_USER = None
 DEBUG_PROJECT = None
+DEFAULT_PORT = 8888
 
 
 class Session(orc.Session):
@@ -728,8 +730,9 @@ class Session(orc.Session):
 
 
 class Application(orc.Application):
-	"""BASS Application"""
-	def __init__(self):
+	"""BASS Application. Takes as parameter a ConfigParser taking the
+	configuration."""
+	def __init__(self, config):
 		orc.Application.__init__(self,
 			name = "bass",
 			authors = ['H. Cassé', "W. McJ. Joseph", "C. Jéré"],
@@ -740,9 +743,20 @@ class Application(orc.Application):
 			website="https://github.com/hcasse/bass"
 		)
 
-		self.data_dir = os.path.join(os.getcwd(), "data")
+		# prepare data
 		self.base_dir = os.path.dirname(__file__)
 		self.users = {}
+		self.data_dir = "data"
+		self.admin = "admin"
+
+		# parse configuration
+		self.config = config
+		if "bass" in config:
+			self.data_dir = config.get("bass", "data_dir", fallback=self.data_dir)
+			self.admin = config.get("bass", "admin", fallback=self.admin)
+
+		# finalize configuration
+		self.data_dir = os.path.join(os.getcwd(), self.data_dir)
 
 		# load passwords
 		self.pwd_path = os.path.join(self.data_dir, "passwords.txt")
@@ -856,13 +870,31 @@ class Application(orc.Application):
 
 
 if __name__ == '__main__':
+	verbose = False
 
 	# parse arguments
 	parser = argparse.ArgumentParser(prog="bass", description="BASS server")
+	parser.add_argument('--verbose', action='store_true', help='enable verbose mode')
 	parser.add_argument('--debug', action='store_true', help='enable debugging')
 	parser.add_argument('--debug-user', help='automatically log to this user for debugging.')
 	parser.add_argument('--debug-project', help='automatically open the project for debugging.')
+	parser.add_argument('--data-dir', help="Path to the data directory")
+	parser.add_argument('--config', default="config.ini", help="Select configuration file.")
 	args = parser.parse_args()
+	verbose = args.verbose
+
+	# load configuration
+	config_path = args.config
+	config = configparser.ConfigParser()
+	if verbose:
+		print("INFO: reading configuration from", config_path)
+	try:
+		with open(config_path, "r") as input:
+			config.read_file(input)
+	except (FileNotFoundError, configparser.Error) as e:
+		print("ERROR:", str(e))
+	if args.data_dir:
+		config["bass"]["datadir"] = args.data_dir
 
 	# convert argument to configuration
 	DEBUG_USER = args.debug_user
@@ -870,5 +902,11 @@ if __name__ == '__main__':
 	DEBUG = args.debug or DEBUG_USER or DEBUG_PROJECT
 
 	# run the server
+	try:
+		port = config.getint("server", 'port', fallback=DEFAULT_PORT)
+	except KeyError:
+		port = DEFAULT_PORT
+	if verbose:
+		print("INFO: running server on port", port)
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	orc.run(Application(), dirs=[assets], debug=False)
+	orc.run(Application(config), dirs=[assets], debug=False, port=port)

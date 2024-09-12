@@ -19,7 +19,7 @@ run:
 
 
 debug:
-	$(PYTHON) -m bass.server --debug-user moi --debug-project=sum
+	$(PYTHON) -m bass.server --debug-user moi --debug-project=sum --verbose
 
 test:
 	$(PYTHON) -m bass.test

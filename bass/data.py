@@ -365,7 +365,7 @@ class User:
 	def get_path(self):
 		"""Get the directory of the user."""
 		if self.path is None:
-			self.path = os.path.join(self.app.get_data_dir(), self.name)
+			self.path = os.path.join(self.app.get_data_dir(), "users", self.name)
 		return self.path
 
 	def get_account_path(self):
