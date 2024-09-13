@@ -127,6 +127,7 @@ class Session(orc.Session):
 		self.error_dialog = None
 
 	def release(self):
+		orc.Session.release()
 		if self.user is None:
 			name = "no user"
 		else:
