@@ -6,6 +6,7 @@
 import argparse
 import configparser
 from datetime import datetime
+import logging
 import os
 import os.path
 import re
@@ -41,6 +42,7 @@ class Session(orc.Session):
 
 	def __init__(self, app, man):
 		orc.Session.__init__(self, app, man)
+		self.app = app
 
 		# get configuration
 		self.sim_freq = app.get_config("sim_freq", 5)
@@ -123,6 +125,17 @@ class Session(orc.Session):
 		self.rename_dialog = None
 		self.delete_dialog = None
 		self.error_dialog = None
+
+	def release(self):
+		if self.user is None:
+			name = "no user"
+		else:
+			name = self.user.get_name()
+		self.get_logger().info(f"session {self.get_number()} ({name}) closed!")
+
+	def get_logger(self):
+		"""Get the logger of the application."""
+		return self.app.get_logger()
 
 	def get_page(self):
 		"""Get the main page."""
@@ -579,6 +592,7 @@ class Session(orc.Session):
 		user.connect(self)
 		self.user = user
 		self.user_label.set_text(user.get_name())
+		self.get_logger().info("Logging %s" % self.user.get_name())
 
 	def cleanup_user(self):
 		"""Cleanup the current user."""
@@ -758,6 +772,16 @@ class Application(orc.Application):
 		# finalize configuration
 		self.data_dir = os.path.join(os.getcwd(), self.data_dir)
 
+		# configure handler
+		logging.basicConfig(
+			filename=os.path.join(self.data_dir, "bass.log"),
+			level=logging.DEBUG,
+			datefmt='%Y-%m-%d %H:%M:%S',
+			format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+		)
+		self.logger = logging.getLogger("bass")
+		self.logger.info("Starting servers BASS.")
+
 		# load passwords
 		self.pwd_path = os.path.join(self.data_dir, "passwords.txt")
 		self.load_passwords()
@@ -766,9 +790,14 @@ class Application(orc.Application):
 		self.template_path = os.path.join(self.base_dir, "templates")
 		self.load_templates()
 
-	def log(self , msg):
+	def log(self, msg, level=logging.INFO):
 		"""Log a message."""
-		print(f"LOG: {datetime.today()}: {msg}")
+		self.logger.log(level, msg)
+
+	def get_logger(self):
+		"""Get the logger of the application (as returned by logging
+		Python's module)."""
+		return self.logger
 
 	def get_base_dir(self):
 		"""Get the directory containing code and assets."""
@@ -909,4 +938,8 @@ if __name__ == '__main__':
 	if verbose:
 		print("INFO: running server on port", port)
 	assets = os.path.join(os.path.dirname(__file__), "assets")
-	orc.run(Application(config), dirs=[assets], debug=False, port=port)
+	orc.run(Application(config),
+		dirs=[assets],
+		debug=DEBUG,
+		port=port,
+		server=True)
