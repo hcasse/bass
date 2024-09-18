@@ -341,15 +341,18 @@ class Project:
 class User:
 	"""A user."""
 
-	def __init__(self, name, email=None):
+	def __init__(self, name, email=None, groups=None):
 		if email is None:
 			email = ""
+		if groups is None:
+			groups = []
 		self.app = None
 		self.name = name
 		self.email = email
 		self.projects = []
 		self.path = None
 		self.sessions = []
+		self.groups = groups
 
 	def get_name(self):
 		return self.name
@@ -395,6 +398,7 @@ class User:
 		for name in config.get("user", "projects").split(";"):
 			if name != "":
 				self.add_project(Project(self, name))
+		self.groups = config.get("user", "groups", fallback="").split(";")
 
 	def save(self):
 		"""Save the user file."""
@@ -402,6 +406,7 @@ class User:
 		config['user'] = {}
 		config['user']['email'] = self.email
 		config['user']['projects'] = ";".join([p.name for p in self.projects])
+		config['user']['groups'] = ";".join(self.groups)
 		with open(self.get_account_path(), "w") as out:
 			config.write(out)
 

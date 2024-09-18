@@ -127,7 +127,7 @@ class Session(orc.Session):
 		self.error_dialog = None
 
 	def release(self):
-		orc.Session.release()
+		orc.Session.release(self)
 		if self.user is None:
 			name = "no user"
 		else:
@@ -674,7 +674,8 @@ class Session(orc.Session):
 				break
 			i += 1
 		try:
-			user = User(name)
+			groups = [self.get_application().get_anon_group()]
+			user = User(name, groups=groups)
 			self.get_application().add_user(user)
 			self.setup_user(user)
 			self.login_dialog.hide()
@@ -696,7 +697,8 @@ class Session(orc.Session):
 		if self.get_application().exists_user(name):
 			self.register_dialog.user.update_observers()
 			return
-		user = User(name, email=~self.register_dialog.email)
+		groups = [self.get_application().get_default_group()]
+		user = User(name, email=~self.register_dialog.email, groups=groups)
 		try:
 			self.get_application().add_user(user, ~self.register_dialog.pwd)
 			self.setup_user(user)
@@ -763,12 +765,15 @@ class Application(orc.Application):
 		self.users = {}
 		self.data_dir = "data"
 		self.admin = "admin"
+		self.default_group = "students"
+		self.anon_group = "anonymous"
 
 		# parse configuration
 		self.config = config
-		if "bass" in config:
-			self.data_dir = config.get("bass", "data_dir", fallback=self.data_dir)
-			self.admin = config.get("bass", "admin", fallback=self.admin)
+		self.data_dir = config.get("bass", "data_dir", fallback=self.data_dir)
+		self.admin = config.get("bass", "admin", fallback=self.admin)
+		self.default_group = config.get("bass", "default_group", fallback=self.default_group)
+		self.anon_group = config.get("bass", "anon_group", fallback=self.anon_group)
 
 		# finalize configuration
 		self.data_dir = os.path.join(os.getcwd(), self.data_dir)
@@ -790,6 +795,14 @@ class Application(orc.Application):
 		# load templates
 		self.template_path = os.path.join(self.base_dir, "templates")
 		self.load_templates()
+
+	def get_default_group(self):
+		"""Get the default group name."""
+		return self.get_default_group
+
+	def get_anon_group(self):
+		"""Get the name of the anonymous group."""
+		return self.get_anon_group
 
 	def log(self, msg, level=logging.INFO):
 		"""Log a message."""

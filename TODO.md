@@ -7,7 +7,7 @@
 [ ] Resizing register and the rest.
 [ ] Support for board input-output.
 [ ] Display more on about.
-[ ] Add UT3 publicity.
+[ ] Add UT3 ads.
 [ ] Provide help.
 [ ] Save all regularly and at end of session.
 

@@ -1,3 +1,21 @@
+#
+#	BASS is an online training assembly simulator.
+#	Copyright (C) 2024 University of Toulouse <hugues.casse@irit.fr>
+#
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
+#
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
 """Main module of the BASS."""
 
 from enum import Enum
@@ -176,10 +194,6 @@ class Simulator:
 	def get_date(self):
 		"""Get the date in cycles."""
 		return 0
-
-	def reset(self):
-		"""Reset the simulator."""
-		pass
 
 	def get_byte(self, addr):
 		"""Get the byte at the given address."""
