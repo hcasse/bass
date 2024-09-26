@@ -173,14 +173,18 @@ table.register-pane tr td:nth-child(2) {
 
 	def on_project_set(self, session, project):
 		"""Set the current architecture."""
-		arch = project.get_arch()
-		if arch != self.arch:
-			self.arch = arch
-			regs = sum(
-				(b.get_registers() for b in arch.get_registers()),
-				start=[])
-			self.regs = [DisplayRegister(r) for r in regs]
-			self.set_table_model(RegisterModel(self.regs, self))
+		sim = session.get_sim()
+		if sim is None:
+			self.set_table_model(RegisterModel([], self))
+		else:
+			arch = sim.get_arch()
+			if arch != self.arch:
+				self.arch = arch
+				regs = sum(
+					(b.get_registers() for b in arch.get_registers()),
+					start=[])
+				self.regs = [DisplayRegister(r) for r in regs]
+				self.set_table_model(RegisterModel(self.regs, self))
 
 	def make_content(self):
 		"""Build the content of the component."""

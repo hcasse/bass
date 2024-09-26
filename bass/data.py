@@ -8,8 +8,8 @@ import re
 import shutil
 import subprocess
 
+from bass import find_symbol
 import bass
-from bass import arm
 
 class DataException(Exception):
 	"""Error raised by the database."""
@@ -115,6 +115,9 @@ class Template:
 		self.exec = "main.elf"
 		self.sources = ["main.s"]
 		self.arch = "arm"
+		self.arch_obj = None
+		self.sim = "bass.arm.Simulator"
+		self.sim_cls = None
 		self.path = os.path.join(app.get_template_dir(), self.name)
 		self.install = []
 		self.board = None
@@ -137,7 +140,8 @@ class Template:
 		self.exec = config.get("template", "exec", fallback="main.elf")
 		self.sources = config.get("template", "sources", fallback="main.s").split(";")
 		self.install = config.get("template", "install", fallback="main.s").split(";")
-		self.arch = config.get("template", "arch", fallback="arm")
+		self.arch = config.get("template", "arch", fallback=self.arch)
+		self.sim = config.get("template", "sim", fallback=self.sim)
 		self.board = config.get("template", "board", fallback=None)
 
 	def has_board(self):
@@ -163,6 +167,14 @@ class Template:
 	def get_exec_name(self):
 		"""Get the executable name."""
 		return self.exec
+
+	def get_simulator(self):
+		"""Get the simulator used by the project."""
+		if self.sim_cls is None:
+			self.sim_cls = find_symbol(self.sim)
+			if self.sim_cls is None:
+				raise DataException(f"cannot find class '{self.sim}'")
+		return self.sim_cls()
 
 
 class Project:
@@ -281,9 +293,7 @@ class Project:
 	def new_sim(self):
 		"""Start simulator for the project executable.
 		Return the simulator. If there is an error, raises a SimException."""
-		sim = arm.Simulator()
-		sim.load(self.get_exec_path())
-		return sim
+		return self.template.get_simulator()
 
 	def get_disasm(self):
 		"""Get the disassembly of the current program."""
@@ -306,10 +316,6 @@ class Project:
 				raise bass.DisassemblyException(cp.stderr.replace('\n', ' '))
 
 		return self.disasm
-
-	def get_arch(self):
-		"""Get the architecture used in this project."""
-		return arm.Simulator.get_arch()
 
 	def rename(self, name):
 		"""Change the name of the project."""

@@ -182,6 +182,10 @@ class Session(orc.Session):
 		self.sim_timeout.set(True)
 		self.update_sim_display()
 
+	def get_sim(self):
+		"""Get the current simulator."""
+		return self.sim
+
 	def complete_quantum(self):
 		self.sim_timer.stop()
 		self.running.set(False)
@@ -192,16 +196,15 @@ class Session(orc.Session):
 	def start_sim(self):
 		"""Start the simulation."""
 
-		# start the simulator
-		if self.sim is None:
-			try:
-				self.sim = self.get_project().new_sim()
-			except bass.SimException as e:
-				self.console.append(orc.text(orc.ERROR, f"ERROR:{e}"))
-				return
-			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
-		else:
+		# reset the simulator
+		if self.sim is not None:
 			self.sim.reset()
+
+		# load the code
+		try:
+			self.sim.load(self.project.get_exec_path())
+		except bass.SimException as e:
+			self.console.append(orc.Text(orc.Error, f"ERROR: {e}"))
 
 		# prepare simulation
 		self.started.set(True)
@@ -504,6 +507,14 @@ class Session(orc.Session):
 		self.project = project
 		self.project_label.set_text(project.get_name())
 
+		# load the simulator
+		try:
+			self.sim = project.new_sim()
+		except bass.SimException as e:
+			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
+			self.sim = None
+		self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
+
 		# setup editors
 		for file in project.get_sources():
 			editor = CodeEditor(file)
@@ -519,6 +530,7 @@ class Session(orc.Session):
 		for pane in self.panes:
 			pane.on_project_set(self, project)
 		self.compiled.set(False)
+
 
 	def cleanup_project(self, after):
 		"""Cleanup a project before closing. After is the function that

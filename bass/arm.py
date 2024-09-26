@@ -2,68 +2,7 @@
 
 import armgliss as arm
 import bass
-
-class Register(bass.Register):
-
-	def __init__(self, name, bank, index, format=bass.RegDisplay.SIGNED):
-		bass.Register.__init__(self, name)
-		self.bank = bank
-		self.index = index
-		self.fmt = format
-
-	def format(self, value):
-		return self.fmt.format(value)
-
-	def get_format(self):
-		return self.fmt
-
-
-class AddrRegister(Register):
-	"""Register containing an address."""
-
-	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index, bass.RegDisplay.HEX)
-
-	def format(self, value):
-		return f"{value:08x}"
-
-
-class CPSRegister(Register):
-	"""Register containing CPSR."""
-
-	MODES = {
-		0b0000: "User",
-		0b0001: "FIQ",
-		0b0010:	"IRQ",
-		0b0011: "Super",
-		0b0110: "Monit",
-		0b0111: "Abort",
-		0b1010: "Hyper",
-		0b1011: "Undef",
-		0b1111: "Sys"
-	}
-
-	@staticmethod
-	def do_format(value):
-		N = "N" if (value >> 31) & 1 else "-"
-		Z = "Z" if (value >> 30) & 1 else "-"
-		C = "C" if (value >> 29) & 1 else "-"
-		V = "V" if (value >> 28) & 1 else "-"
-		E = "E" if (value >> 9) & 1 else "-"
-		A = "A" if (value >> 8) & 1 else "-"
-		I = "I" if (value >> 7) & 1 else "-"
-		F = "F" if (value >> 6) & 1 else "-"
-		try:
-			M = CPSRegister.MODES[value & 0xf]
-		except KeyError:
-			M = "Invalid"
-		return f"{N}{Z}{C}{V} {E}{A}{I}{F} {M}"
-
-	FORMAT = bass.Format(None, do_format, custom = True)
-
-	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index, self.FORMAT)
-
+from bass.arch import *
 
 class Arch(bass.Arch):
 	"""Architecture representation for ARM."""
@@ -126,6 +65,7 @@ class Arch(bass.Arch):
 			return self.map[name.upper()]
 		except KeyError:
 			return None
+
 
 class Simulator(bass.Simulator):
 
@@ -274,5 +214,3 @@ class Simulator(bass.Simulator):
 
 def load(path):
 	return Simulator(path)
-
-

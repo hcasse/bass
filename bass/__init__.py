@@ -18,13 +18,27 @@
 
 """Main module of the BASS."""
 
+
 from enum import Enum
+import importlib
+
 from orchid import matches
 
 
 def project_name_pred(var):
 	"""Build a predicate for a project name."""
 	return matches(var, "[a-zA-Z0-9_+=-]+")
+
+def find_symbol(path):
+	"""Find a symbol from its name. Return the class or None."""
+	comps = path.split('.')
+	cls = comps[-1]
+	path = '.'.join(comps[:-1])
+	try:
+		mod = importlib.import_module(path)
+		return mod.__dict__[cls]
+	except (ModuleNotFoundError, KeyError):
+		return None
 
 class MessageException(Exception):
 	"""Base class of exception supporting a message."""
@@ -144,7 +158,8 @@ class Simulator:
 	"""Interface to the simulator."""
 
 	def load(self, path):
-		"""Load the executable with the passed path."""
+		"""Load the executable with the passed path. If there is an error,
+		raises a SimException."""
 		pass
 
 	def reset(self):
