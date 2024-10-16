@@ -18,7 +18,7 @@
 
 """CSim class module for interconnection with CSim library."""
 
-from bass import Simulator
+from bass import Simulator, SimException
 
 class CSim(Simulator):
 	"""CSim is a generic simulator for micro-controller boards.
