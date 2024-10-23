@@ -28,7 +28,7 @@ check:
 	$(PYLINT) bass | less
 
 autodoc:
-	export PYTHONPATH=$(PWD):$(PWD)/Orchid; \
+	export PYTHONPATH=$(PWD):$(PWD)/Orchid:$(PWD)/csim/python; \
 	gnome-terminal -- pydoc3 -b
 
 

@@ -174,7 +174,7 @@ class Template:
 			self.sim_cls = find_symbol(self.sim)
 			if self.sim_cls is None:
 				raise DataException(f"cannot find class '{self.sim}'")
-		return self.sim_cls()
+		return self.sim_cls(self)
 
 
 class Project:

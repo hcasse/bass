@@ -71,8 +71,8 @@ class Simulator(bass.Simulator):
 
 	ARCH = None
 
-	def __init__(self):
-		bass.Simulator.__init__(self)
+	def __init__(self, template):
+		bass.Simulator.__init__(self, template)
 
 		# initialize all
 		self.labels = None
@@ -117,62 +117,62 @@ class Simulator(bass.Simulator):
 			arm.loader_close(self.loader)
 			self.loader = None
 
-	def get_label(self, name):
-		if self.labels is None:
-			self.labels = {}
-			for i in range(0, arm.loader_count_syms(self.loader)):
-				sym = arm.loader_sym(self.loader, i)
-				self.labels[sym[0]] = sym[1]
-		try:
-			return self.labels[name]
-		except KeyError:
-			return None
+	#def get_label(self, name):
+	#	if self.labels is None:
+	#		self.labels = {}
+	#		for i in range(0, arm.loader_count_syms(self.loader)):
+	#			sym = arm.loader_sym(self.loader, i)
+	#			self.labels[sym[0]] = sym[1]
+	#	try:
+	#		return self.labels[name]
+	#	except KeyError:
+	#		return None
 
 	def set_break(self, addr):
 		self.breaks.append(addr)
 
-	def getNbSyms(self):
-		return arm.loader_count_syms(self.loader)
+	#def getNbSyms(self):
+	#	return arm.loader_count_syms(self.loader)
 
-	def getRegisterBank(self,i):
-		return arm.get_register_bank(i)
+	#def getRegisterBank(self,i):
+	#	return arm.get_register_bank(i)
 
-	def getRegister(self,i,j):
-		return arm.get_register(self.state, i, j)
+	#def getRegister(self,i,j):
+	#	return arm.get_register(self.state, i, j)
 
 	def step(self):
 		assert self.sim is not None
 		arm.step(self.sim)
 		self.date += 1
 
-	def stepInto(self):
-		inst= arm.next_inst(self.sim)
-		print("instruction :", inst)
-		disasm=arm.disasm(inst)
-		adrInst=arm.get_inst_addr(inst)
-		print("retour dessassemblage")
-		arm.free_inst(inst)
-		arm.step(self.sim)
-		retour=str(hex(adrInst))
-		retour+="	==>	"+disasm
-		return retour
+	#def stepInto(self):
+	#	inst= arm.next_inst(self.sim)
+	#	print("instruction :", inst)
+	#	disasm=arm.disasm(inst)
+	#	adrInst=arm.get_inst_addr(inst)
+	#	print("retour dessassemblage")
+	#	arm.free_inst(inst)
+	#	arm.step(self.sim)
+	#	retour=str(hex(adrInst))
+	#	retour+="	==>	"+disasm
+	#	return retour
 
-	def getNbRegisterBank(self):
-		return arm.count_register_banks()
+	#def getNbRegisterBank(self):
+	#	return arm.count_register_banks()
 
-	def nextInstruction(self):
-		return arm.next_addr(self.sim)
+	#def nextInstruction(self):
+	#	return arm.next_addr(self.sim)
 
-	def getMemory(self):
-		if self.mem is None:
-			self.mem = arm.get_memory(self.pf,0)
-		return self.mem
+	#def getMemory(self):
+	#	if self.mem is None:
+	#		self.mem = arm.get_memory(self.pf,0)
+	#	return self.mem
 
-	def getStateMemory(self):
-		return arm.get_state_memory(self.state)
+	#def getStateMemory(self):
+	#	return arm.get_state_memory(self.state)
 
-	def getState(self):
-		return self.state
+	#def getState(self):
+	#	return self.state
 
 	def get_pc(self):
 		return arm.next_addr(self.sim)

@@ -157,6 +157,14 @@ class Arch:
 class Simulator:
 	"""Interface to the simulator."""
 
+	def __init__(self, template):
+		"""Build a simulator."""
+		self.template = template
+
+	def get_template(self):
+		"""Get the template that supports the simulator."""
+		return self.template
+
 	def load(self, path):
 		"""Load the executable with the passed path. If there is an error,
 		raises a SimException."""
@@ -170,9 +178,9 @@ class Simulator:
 		"""Release the simulator."""
 		pass
 
-	def get_label(self, name):
-		"""Get the name of a label. Return None if the label is not found."""
-		return None
+	#def get_label(self, name):
+	#	"""Get the name of a label. Return None if the label is not found."""
+	#	return None
 
 	def set_break(self, addr):
 		"""Set a breakpoint to the given address."""
