@@ -103,10 +103,12 @@ class RegDisplay:
 
 
 class Register:
-	"""Represents a register in the simulator."""
+	"""Represents a register in the simulator. Handle may be any value to
+	represent register in the underlying simulator."""
 
-	def __init__(self, name):
+	def __init__(self, name, handle=None):
 		self.name = name
+		self.handle = handle
 
 	def get_name(self):
 		"""Get the register name."""
@@ -119,22 +121,6 @@ class Register:
 	def get_format(self):
 		"""Get the format used by this register."""
 		pass
-
-
-class RegisterBank:
-	"""Represents a register bank."""
-
-	def __init__(self, name, regs):
-		self.name = name
-		self.regs = regs
-
-	def get_name(self):
-		"""Get the name of the register bank."""
-		return self.name
-
-	def get_registers(self):
-		"""Get the registers of the register bank."""
-		return self.regs
 
 
 class Arch:
@@ -177,10 +163,6 @@ class Simulator:
 	def release(self):
 		"""Release the simulator."""
 		pass
-
-	#def get_label(self, name):
-	#	"""Get the name of a label. Return None if the label is not found."""
-	#	return None
 
 	def set_break(self, addr):
 		"""Set a breakpoint to the given address."""

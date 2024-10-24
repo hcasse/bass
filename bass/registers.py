@@ -180,9 +180,7 @@ table.register-pane tr td:nth-child(2) {
 			arch = sim.get_arch()
 			if arch != self.arch:
 				self.arch = arch
-				regs = sum(
-					(b.get_registers() for b in arch.get_registers()),
-					start=[])
+				regs = arch.get_registers()
 				self.regs = [DisplayRegister(r) for r in regs]
 				self.set_table_model(RegisterModel(self.regs, self))
 
@@ -210,7 +208,7 @@ table.register-pane tr td:nth-child(2) {
 		self.changed = changed
 
 	def on_sim_start(self, session, sim):
-		print("DEBUG: registers.sim_start")
+		#print("DEBUG: registers.sim_start")
 		self.sim = sim
 		for (row, reg) in enumerate(self.regs):
 			val = sim.get_register(reg.reg)
@@ -219,7 +217,7 @@ table.register-pane tr td:nth-child(2) {
 		self.enable()
 
 	def on_sim_stop(self, session, sim):
-		print("DEBUG: registers.sim_stop")
+		#print("DEBUG: registers.sim_stop")
 		self.disable()
 		self.get_table_model().remove_observer(self.updater)
 		self.sim = None

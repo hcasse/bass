@@ -8,9 +8,9 @@ class Arch(bass.Arch):
 	"""Architecture representation for ARM."""
 
 	NAMES = {
-		13: "SP",
-		14: "LR",
-		15: "PC"
+		"R13": "SP",
+		"R14": "LR",
+		"R15": "PC"
 	}
 
 	def __init__(self):
@@ -23,34 +23,30 @@ class Arch(bass.Arch):
 	def get_registers(self):
 		if self.regs is None:
 			self.regs = []
-			R = None
-			CPSR = None
+			R = []
+			CPSR = []
 			count = arm.count_register_banks()
-			for i in range(count):
-				(name, fmt, rcount, _, _) = arm.get_register_bank(i)
+			for bank in range(count):
+				(name, fmt, rcount, _, _) = arm.get_register_bank(bank)
 				if rcount == 1:
 					if name == "CPSR":
-						regs = [CPSRegister(name, i, 0)]
+						CPSR.append(CPSRegister(name, 0, handle=bank))
 					else:
-						regs = [Register(name, i, 0)]
+						self.regs.append(Register(name, 0, handle=bank))
 				else:
-					regs = []
-					for j in range(rcount):
-						if name == "R" and j >= 13:
-							reg = AddrRegister(self.NAMES[j], i, j)
+					for i in range(rcount):
+						iname = fmt % i
+						try:
+							reg = AddrRegister(self.NAMES[iname], i, handle=bank)
+						except KeyError:
+							reg = Register(iname, i, handle=bank)
+						if name == "R":
+							R.append(reg)
 						else:
-							reg = Register(fmt % j, i, j)
-						regs.append(reg)
-				bank = bass.RegisterBank(name, regs)
-				if name == "R":
-					R = bank
-				elif name == "CPSR":
-					CPSR = bank
-				else:
-					self.regs.append(bank)
-			assert R is not None
-			assert CPSR is not None
-			self.regs = [R, CPSR] + self.regs
+							self.regs.append(reg)
+			assert len(R) != 0
+			assert len(CPSR) != 0
+			self.regs = R + CPSR + self.regs
 		return self.regs
 
 	def find_register(self, name):
@@ -86,6 +82,7 @@ class Simulator(bass.Simulator):
 		self.banks =  None
 		self.date = 0
 		self.path = None
+		self.start = None
 
 		# build the simulator
 		self.pf = arm.new_platform()
@@ -117,62 +114,13 @@ class Simulator(bass.Simulator):
 			arm.loader_close(self.loader)
 			self.loader = None
 
-	#def get_label(self, name):
-	#	if self.labels is None:
-	#		self.labels = {}
-	#		for i in range(0, arm.loader_count_syms(self.loader)):
-	#			sym = arm.loader_sym(self.loader, i)
-	#			self.labels[sym[0]] = sym[1]
-	#	try:
-	#		return self.labels[name]
-	#	except KeyError:
-	#		return None
-
 	def set_break(self, addr):
 		self.breaks.append(addr)
-
-	#def getNbSyms(self):
-	#	return arm.loader_count_syms(self.loader)
-
-	#def getRegisterBank(self,i):
-	#	return arm.get_register_bank(i)
-
-	#def getRegister(self,i,j):
-	#	return arm.get_register(self.state, i, j)
 
 	def step(self):
 		assert self.sim is not None
 		arm.step(self.sim)
 		self.date += 1
-
-	#def stepInto(self):
-	#	inst= arm.next_inst(self.sim)
-	#	print("instruction :", inst)
-	#	disasm=arm.disasm(inst)
-	#	adrInst=arm.get_inst_addr(inst)
-	#	print("retour dessassemblage")
-	#	arm.free_inst(inst)
-	#	arm.step(self.sim)
-	#	retour=str(hex(adrInst))
-	#	retour+="	==>	"+disasm
-	#	return retour
-
-	#def getNbRegisterBank(self):
-	#	return arm.count_register_banks()
-
-	#def nextInstruction(self):
-	#	return arm.next_addr(self.sim)
-
-	#def getMemory(self):
-	#	if self.mem is None:
-	#		self.mem = arm.get_memory(self.pf,0)
-	#	return self.mem
-
-	#def getStateMemory(self):
-	#	return arm.get_state_memory(self.state)
-
-	#def getState(self):
-	#	return self.state
 
 	def get_pc(self):
 		return arm.next_addr(self.sim)
@@ -187,11 +135,11 @@ class Simulator(bass.Simulator):
 
 	def get_register(self, reg):
 		assert self.state is not None
-		return arm.get_register(self.state, reg.bank, reg.index)
+		return arm.get_register(self.state, reg.handle, reg.index)
 
 	def set_register(self, reg, value):
 		assert self.state is not None
-		arm.set_register(self.state, reg.bank, reg.index, value)
+		arm.set_register(self.state, reg.handle, reg.index, value)
 
 	def get_date(self):
 		return self.date

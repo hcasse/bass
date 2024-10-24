@@ -23,9 +23,8 @@ import bass
 class Register(bass.Register):
 	"""Simple decimal register displat."""
 
-	def __init__(self, name, bank, index, format=bass.RegDisplay.SIGNED):
-		bass.Register.__init__(self, name)
-		self.bank = bank
+	def __init__(self, name, index, format=bass.RegDisplay.SIGNED, handle=None):
+		bass.Register.__init__(self, name, handle)
 		self.index = index
 		self.fmt = format
 
@@ -39,8 +38,8 @@ class Register(bass.Register):
 class AddrRegister(Register):
 	"""Register containing an address."""
 
-	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index, bass.RegDisplay.HEX)
+	def __init__(self, name, index, handle=None):
+		Register.__init__(self, name, index, bass.RegDisplay.HEX, handle)
 
 	def format(self, value):
 		return f"{value:08x}"
@@ -79,5 +78,5 @@ class CPSRegister(Register):
 
 	FORMAT = bass.Format(None, do_format, custom = True)
 
-	def __init__(self, name, bank, index):
-		Register.__init__(self, name, bank, index, self.FORMAT)
+	def __init__(self, name, index, handle=None):
+		Register.__init__(self, "CPSR", index, self.FORMAT, handle)
