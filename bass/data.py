@@ -358,6 +358,8 @@ class User:
 		self.projects = []
 		self.path = None
 		self.sessions = []
+		if groups is None:
+			self.groups = []
 		self.groups = groups
 
 	def get_name(self):
@@ -371,10 +373,14 @@ class User:
 		"""Change the mail of the user."""
 		self.email = email
 
+	@staticmethod
+	def make_path(app, name):
+		return os.path.join(app.get_data_dir(), "users", name)
+
 	def get_path(self):
 		"""Get the directory of the user."""
 		if self.path is None:
-			self.path = os.path.join(self.app.get_data_dir(), "users", self.name)
+			self.path =  User.make_path(self.app, self.name)
 		return self.path
 
 	def get_account_path(self):
@@ -408,6 +414,7 @@ class User:
 
 	def save(self):
 		"""Save the user file."""
+		print("DEBUG:", self.name, self.groups)
 		config = configparser.ConfigParser()
 		config['user'] = {}
 		config['user']['email'] = self.email

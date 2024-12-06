@@ -681,7 +681,7 @@ class Session(orc.Session):
 		i = 0
 		while True:
 			name = f"anon-{i}"
-			user_dir = os.path.join(self.get_application().get_data_dir(), name)
+			user_dir = User.make_path(self.get_application(), name)
 			if not os.path.exists(user_dir):
 				break
 			i += 1
@@ -693,7 +693,7 @@ class Session(orc.Session):
 			self.login_dialog.hide()
 			self.select_project()
 		except DataException as e:
-			self.login_dialog.error(e)
+			self.login_dialog.error(str(e))
 
 	def retrieve_pwd(self, console):
 		pass
@@ -814,7 +814,7 @@ class Application(orc.Application):
 
 	def get_anon_group(self):
 		"""Get the name of the anonymous group."""
-		return self.get_anon_group
+		return "anonymous"
 
 	def log(self, msg, level=logging.INFO):
 		"""Log a message."""
