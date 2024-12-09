@@ -373,14 +373,10 @@ class User:
 		"""Change the mail of the user."""
 		self.email = email
 
-	@staticmethod
-	def make_path(app, name):
-		return os.path.join(app.get_data_dir(), "users", name)
-
 	def get_path(self):
 		"""Get the directory of the user."""
 		if self.path is None:
-			self.path =  User.make_path(self.app, self.name)
+			self.path =  self.app.get_user_path(self.name)
 		return self.path
 
 	def get_account_path(self):

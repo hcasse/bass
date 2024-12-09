@@ -6,11 +6,14 @@
 import argparse
 import configparser
 from datetime import datetime
+import glob
 import logging
 import os
 import os.path
 import re
+import shutil
 import sys
+import threading
 import time
 
 import Orchid.orchid as orc
@@ -778,6 +781,7 @@ class Application(orc.Application):
 		self.data_dir = "data"
 		self.admin = "admin"
 		self.default_group = "students"
+		self.anon_enable = True
 		self.anon_group = "anonymous"
 
 		# parse configuration
@@ -785,7 +789,10 @@ class Application(orc.Application):
 		self.data_dir = config.get("bass", "data_dir", fallback=self.data_dir)
 		self.admin = config.get("bass", "admin", fallback=self.admin)
 		self.default_group = config.get("bass", "default_group", fallback=self.default_group)
+		self.anon_enable = config.get("bass", "anon_enable", fallback="yes") == "yes"
 		self.anon_group = config.get("bass", "anon_group", fallback=self.anon_group)
+		self.anon_lifetime = int(config.get("bass", "anon_lifetime", fallback=1))
+		self.anon_removal = int(config.get("bass", "anon_removal", fallback=1))
 
 		# finalize configuration
 		self.data_dir = os.path.join(os.getcwd(), self.data_dir)
@@ -808,13 +815,20 @@ class Application(orc.Application):
 		self.template_path = os.path.join(self.base_dir, "templates")
 		self.load_templates()
 
+		# run threads
+		self.anon_thread = None
+		if self.anon_enable:
+			self.log("starting anonymous cleaning daemon")
+			self.anon_thread = threading.Thread(target=self.anon_daemon)
+			self.anon_thread.start()
+
 	def get_default_group(self):
 		"""Get the default group name."""
 		return self.get_default_group
 
 	def get_anon_group(self):
 		"""Get the name of the anonymous group."""
-		return "anonymous"
+		return anon_group
 
 	def log(self, msg, level=logging.INFO):
 		"""Log a message."""
@@ -922,6 +936,33 @@ class Application(orc.Application):
 		self.users[user.get_name()] = user
 		if password is not None:
 			self.add_password(user.get_name(), password)
+
+	def get_user_path(self, name):
+		"""Get the path for a user with the passed name."""
+		return os.path.join(self.get_data_dir(), "users", name)
+
+	def clean_anons(self):
+		"""Clean anonymous logins if outdated."""
+		self.log("cleanining anonymous logins")
+		path = os.path.join(self.get_data_dir(), "users")
+		lifetime = self.anon_lifetime*24*60*60
+		now = time.time()
+		for dir in glob.glob(f"{path}/anon-*"):
+			create_date = os.stat(dir).st_ctime
+			if create_date + lifetime < now:
+				shutil.rmtree(
+					dir,
+					onerror=lambda f, p, e:
+						self.log(f"cannot remove {p}: {e}")
+				)
+
+	def anon_daemon(self):
+		"""Function called to manage the thread for cleanining anonymous."""
+		print("DEBUG: anon_daemon()!")
+		delay = self.anon_removal*24*60*60
+		while True:
+			self.clean_anons()
+			time.sleep(delay)
 
 
 if __name__ == '__main__':
