@@ -793,6 +793,7 @@ class Application(orc.Application):
 		self.anon_group = config.get("bass", "anon_group", fallback=self.anon_group)
 		self.anon_lifetime = int(config.get("bass", "anon_lifetime", fallback=1))
 		self.anon_removal = int(config.get("bass", "anon_removal", fallback=1))
+		self.register_enable = config.get("bass", "register_enable", fallback="yes") == "yes"
 
 		# finalize configuration
 		self.data_dir = os.path.join(os.getcwd(), self.data_dir)

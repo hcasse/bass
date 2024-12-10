@@ -10,29 +10,32 @@ from bass import project_name_pred
 
 class LoginDialog(dialog.Base):
 
-	def __init__(self, server, page):
+	def __init__(self, session, page):
 		self.user = var("", label="User")
 		self.pwd = var("", label="Password")
-		login = Action(fun=server.login_user, label="Log in")
-		anon = Action(fun=server.login_anon, label="Anonymous connect")
-		retrieve = Action(fun=server.retrieve_pwd, label="Retrieve")
-		register = Action(fun=server.register_user, label="Register")
+		login = Action(fun=session.login_user, label="Log in")
+		anon = Action(fun=session.login_anon, label="Anonymous connect")
+		retrieve = Action(fun=session.retrieve_pwd, label="Retrieve")
+		register = Action(fun=session.register_user, label="Register")
 
+		content = [
+			Form([
+				Field(var = self.user, size=20)
+					.key(Key.ENTER, lambda: self.page.next_focus()),
+				PasswordField(var = self.pwd, size=20)
+					.key(Key.ENTER, login),
+			]),
+			HGroup([hspring(), Button(action=login)]),
+			HGroup([Label("Password forgotten?"), hspring(), Button(action=retrieve)]),
+		]
+		if session.get_application().anon_enable:
+			content.append(HGroup([Label("No login"), hspring(), Button(action=anon)]))
+		if session.get_application().register_enable:
+			content.append(HGroup([hspring(), Button(action=register)]))
 		self.msg = MessageLabel("")
-		main = VGroup([
-				Form([
-					Field(var = self.user, size=20)
-						.key(Key.ENTER, lambda: self.page.next_focus()),
-					PasswordField(var = self.pwd, size=20)
-						.key(Key.ENTER, login),
-				]),
-				HGroup([hspring(), Button(action=login)]),
-				HGroup([Label("Password forgotten?"), hspring(), Button(action=retrieve)]),
-				HGroup([Label("No login"), hspring(), Button(action=anon)]),
-				HGroup([hspring(), Button(action=register)]),
-				self.msg
-			])
-		dialog.Base.__init__(self, page, main, title="Log in")
+		content.append(self.msg)
+
+		dialog.Base.__init__(self, page, VGroup(content), title="Log in")
 
 	def show(self):
 		self.msg.clear_message()
