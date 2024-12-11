@@ -120,7 +120,9 @@ class SelectDialog(dialog.Base):
 
 	def __init__(self, server, page):
 		self.projects = ListVar(server.get_user().get_projects())
-		self.templates = ListVar(list(server.get_application().get_templates().values()))
+		all_templates = server.get_application().get_templates().values()
+		actual_templates = [t for t in all_templates if t.is_enabled()]
+		self.templates = ListVar(actual_templates)
 		self.selected_project = ListVar([])
 		self.selected_template = ListVar([])
 		self.name = var("")

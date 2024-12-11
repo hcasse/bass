@@ -121,6 +121,7 @@ class Template:
 		self.path = os.path.join(app.get_template_dir(), self.name)
 		self.install = []
 		self.board = None
+		self.enabled = True
 
 	def get_name(self):
 		"""Get the name of the template."""
@@ -129,6 +130,10 @@ class Template:
 	def is_hidden(self, file):
 		"""Check if the given file is hidden, not show to the user, in the current template."""
 		return file in self.hide
+
+	def is_enabled(self):
+		"""Test if the template is enabled."""
+		return self.enabled
 
 	def load(self):
 		"""Load the template from its description file."""
@@ -143,6 +148,7 @@ class Template:
 		self.arch = config.get("template", "arch", fallback=self.arch)
 		self.sim = config.get("template", "sim", fallback=self.sim)
 		self.board = config.get("template", "board", fallback=None)
+		self.enabled = config.get("template", "enabled", fallback="yes") == "yes"
 
 	def has_board(self):
 		"""Test if the template has a board."""
