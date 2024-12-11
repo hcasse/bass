@@ -5,11 +5,15 @@ PYLINT=pylint
 
 # GIT repositories
 ORCHID_GIT = https://github.com/hcasse/Orchid.git
-#ORCHID_GIT = git@github.com:hcasse/Orchid.git
 GLISS_GIT = https://git.renater.fr/anonscm/git/gliss2/gliss2.git
 ARMV5T_GIT = https://git.renater.fr/anonscm/git/gliss2/armv5t.git
 
-export PYTHONPATH=$(PWD)/Orchid:$(PWDd)
+# Paths
+ORCHID_PATH=$(PWD)/Orchid
+CSIM_PATH=$(PWD)/csim
+BASS_PATH=$(PWD)
+export PYTHONPATH=$(PYTHON_PATH):$(BASS_PATH):$(ORCHID_PATH):$(CSIM_PATH)/python
+
 
 # Rules
 all:
@@ -28,9 +32,7 @@ check:
 	$(PYLINT) bass | less
 
 autodoc:
-	export PYTHONPATH=$(PWD):$(PWD)/Orchid:$(PWD)/csim/python; \
 	gnome-terminal -- pydoc3 -b
-
 
 setup: git-orchid git-gliss git-armv5t
 

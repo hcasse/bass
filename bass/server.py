@@ -5,7 +5,6 @@
 
 import argparse
 import configparser
-from datetime import datetime
 import glob
 import logging
 import os
@@ -608,7 +607,7 @@ class Session(orc.Session):
 		user.connect(self)
 		self.user = user
 		self.user_label.set_text(user.get_name())
-		self.get_logger().info("Logging %s" % self.user.get_name())
+		self.get_logger().info(f"Logging {self.user.get_name()}")
 
 	def cleanup_user(self):
 		"""Cleanup the current user."""
@@ -684,7 +683,7 @@ class Session(orc.Session):
 		i = 0
 		while True:
 			name = f"anon-{i}"
-			user_dir = User.make_path(self.get_application(), name)
+			user_dir = self.get_application().get_user_path(name)
 			if not os.path.exists(user_dir):
 				break
 			i += 1
@@ -829,7 +828,7 @@ class Application(orc.Application):
 
 	def get_anon_group(self):
 		"""Get the name of the anonymous group."""
-		return anon_group
+		return self.anon_group
 
 	def log(self, msg, level=logging.INFO):
 		"""Log a message."""

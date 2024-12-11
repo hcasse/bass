@@ -19,7 +19,7 @@
 """CSim class module for interconnection with CSim library."""
 
 import bass
-import bass.arch as arch
+from bass import arch
 from csimui.components import Board
 from csimui.util import BoardError
 
@@ -35,7 +35,7 @@ class Arch:
 
 	def get_registers(self):
 		"""Get the list of register banks."""
-		if self.registers in None:
+		if self.registers is None:
 			for reg in self.core.get_registers():
 				bank = bass.RegisterBank()
 				for i in range(reg.get_count()):
