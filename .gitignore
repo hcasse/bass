@@ -10,3 +10,8 @@ gliss2
 
 ace-builds
 bass/assets/ace
+
+/tmp
+/csim
+/deploy/nginx/tmp
+/deploy/nginx/server.pid

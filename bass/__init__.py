@@ -29,7 +29,7 @@ def project_name_pred(var):
 	"""Build a predicate for a project name."""
 	return matches(var, "[a-zA-Z0-9_+=-]+")
 
-def find_symbol(path):
+def find_symbol(path, log=lambda x: None):
 	"""Find a symbol from its name. Return the class or None."""
 	comps = path.split('.')
 	cls = comps[-1]
@@ -37,8 +37,9 @@ def find_symbol(path):
 	try:
 		mod = importlib.import_module(path)
 		return mod.__dict__[cls]
-	except (ModuleNotFoundError, KeyError):
-		return None
+	except (ModuleNotFoundError, KeyError) as e:
+		print(f"DEBUG: find_symbol: {e}")
+		log(f"ERROR: {e} looking for {path}")
 
 class MessageException(Exception):
 	"""Base class of exception supporting a message."""

@@ -71,3 +71,42 @@ git-armv5t:
 	@cd armv5t/python; $(PYTHON) setup.py install --user
 
 
+# docker goals
+DOCKER_DIR=tmp/bass
+DOCKER_FILES=\
+	bass \
+	Orchid/orchid \
+	Orchid/assets \
+	deploy/docker/config.ini
+	#armv5t/python/build/lib.linux-x86_64-3.10/armgliss.cpython-310-x86_64-linux-gnu.so
+CREATE_USER=$(PWD)/deploy/docker/create_user.py
+
+docker-prepare:
+	-rm -rf $(DOCKER_DIR)
+	mkdir $(DOCKER_DIR)
+	cp -RL $(DOCKER_FILES) $(DOCKER_DIR)
+	mkdir $(DOCKER_DIR)/data
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "hugues" "!casse!"
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "thomas" "!carle!"
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "christine" "!rochange!"
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "pascal" "!sainrat!"
+
+docker-base:
+	sudo docker build -f deploy/docker/Dockerfile.base -t bass:base .
+
+export DOCKER_BUILDKIT=0
+docker:
+	cd armv5t; make binclean
+	sudo docker build -f deploy/docker/Dockerfile -t bass:latest .
+
+docker-run:
+	sudo docker run -p 8888:8888 --name bass --mount type=bind,source=$(abspath $(DOCKER_DIR)/data),target=/bass/data -i -t bass:latest
+
+docker-check:
+	sudo docker run -i -t bass:latest bash
+
+docker-stop:
+	sudo docker stop bass
+	sudo docker-clean -c
+
+# docker exec -ti ID /bin/bash

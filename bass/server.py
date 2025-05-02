@@ -15,9 +15,9 @@ import sys
 import threading
 import time
 
-import Orchid.orchid as orc
-from Orchid.orchid import popup
-from Orchid.orchid import dialog
+import orchid as orc
+from orchid import popup
+from orchid import dialog
 
 import bass
 from bass.ace_editor import CodeEditor

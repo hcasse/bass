@@ -177,7 +177,7 @@ class Template:
 	def get_simulator(self):
 		"""Get the simulator used by the project."""
 		if self.sim_cls is None:
-			self.sim_cls = find_symbol(self.sim)
+			self.sim_cls = find_symbol(self.sim, self.app.log)
 			if self.sim_cls is None:
 				raise DataException(f"cannot find class '{self.sim}'")
 		return self.sim_cls(self)
