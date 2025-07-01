@@ -82,14 +82,15 @@ DOCKER_FILES=\
 CREATE_USER=$(PWD)/deploy/docker/create_user.py
 
 docker-prepare:
-	-rm -rf $(DOCKER_DIR)
+	sudo rm -rf $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)
 	cp -RL $(DOCKER_FILES) $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)/data
-	cd $(DOCKER_DIR); python3 $(CREATE_USER) "hugues" "!casse!"
-	cd $(DOCKER_DIR); python3 $(CREATE_USER) "thomas" "!carle!"
-	cd $(DOCKER_DIR); python3 $(CREATE_USER) "christine" "!rochange!"
-	cd $(DOCKER_DIR); python3 $(CREATE_USER) "pascal" "!sainrat!"
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "hugues" "!casse!" -g teacher
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "thomas" "!carle!" -g teacher
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "christine" "!rochange!" -g teacher
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "pascal" "!sainrat!"  -g teacher
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "admin" "!ADMIN!"
 
 docker-base:
 	sudo docker build -f deploy/docker/Dockerfile.base -t bass:base .

@@ -119,7 +119,8 @@ class RegisterDialog(dialog.Base):
 class SelectDialog(dialog.Base):
 
 	def __init__(self, server, page):
-		self.projects = ListVar(server.get_user().get_projects())
+		self.server = server
+		self.projects = ListVar([])
 		all_templates = server.get_application().get_templates().values()
 		actual_templates = [t for t in all_templates if t.is_enabled()]
 		self.templates = ListVar(actual_templates)
@@ -170,6 +171,11 @@ class SelectDialog(dialog.Base):
 		self.set_style("min-width", "400px")
 		self.set_style("min-height", "400px")
 
+	def show(self):
+		dialog.Base.show(self)
+		self.projects.clear()
+		for project in self.server.get_user().get_projects():
+			self.projects.append(project)
 
 	def error(self, msg):
 		self.msg.show_error(msg)

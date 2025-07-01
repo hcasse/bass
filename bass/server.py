@@ -557,6 +557,7 @@ class Session(orc.Session):
 		self.cleanup_project(after)
 
 	def rename_project(self, interface):
+		"""Rename the project."""
 
 		def rename(name):
 			try:
@@ -824,7 +825,7 @@ class Application(orc.Application):
 
 	def get_default_group(self):
 		"""Get the default group name."""
-		return self.get_default_group
+		return self.default_group
 
 	def get_anon_group(self):
 		"""Get the name of the anonymous group."""
