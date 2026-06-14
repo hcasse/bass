@@ -18,7 +18,7 @@
 
 """ARM configuration for bass."""
 
-import armgliss as arm
+import arm_gliss as arm
 import bass
 from bass.arch import *
 
@@ -72,9 +72,8 @@ class Arch(bass.Arch):
 		found."""
 		if self.map is None:
 			self.map = {}
-			for bank in self.get_registers():
-				for reg in bank.get_registers():
-					self.map[reg.get_name()] = reg
+			for reg in self.get_registers():
+				self.map[reg.get_name()] = reg
 		try:
 			return self.map[name.upper()]
 		except KeyError:

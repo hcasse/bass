@@ -12,13 +12,15 @@ ARMV5T_GIT = https://git.renater.fr/anonscm/git/gliss2/armv5t.git
 ORCHID_PATH=$(PWD)/Orchid
 CSIM_PATH=$(PWD)/csim
 BASS_PATH=$(PWD)
-export PYTHONPATH=$(PYTHON_PATH):$(BASS_PATH):$(ORCHID_PATH):$(CSIM_PATH)/python
+ARM_PATH=$(PWD)/armv5t/python
+export PYTHONPATH=$(PYTHON_PATH):$(BASS_PATH):$(ORCHID_PATH):$(CSIM_PATH)/python:$(ARM_PATH)
 
 
 # Rules
 all:
 
 run:
+	echo "PYTHON_PATH=$(PYTHONPATH)"
 	$(PYTHON) -m bass.server --debug
 
 
@@ -68,7 +70,7 @@ git-armv5t:
 		echo "WITH_IO = 1" >> config.mk; \
 	fi
 	@cd armv5t; make
-	@cd armv5t/python; $(PYTHON) setup.py install --user
+	@cd armv5t/python; make
 
 
 # docker goals
