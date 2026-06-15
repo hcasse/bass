@@ -10,6 +10,8 @@
 [ ] Add UT3 ads.
 [ ] Provide help.
 [ ] Save all regularly and at end of session.
+[ ] Add file display.
+[ ] Whern simulation ended, display and focus automatically on source pane.
 
 Project menu :
 [X] delete
@@ -57,6 +59,8 @@ Add toolbar for:
 [ ] read memory as a chunk, not byte by byte
 [ ] follow up memory with registers evolution
 [X] support for '+' and '-'
+[ ] add buttons to move up/down in memory.
+[ ] support backward display (typically for SP-based address)
 
 ## Simulator
 

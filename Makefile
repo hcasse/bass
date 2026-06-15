@@ -80,18 +80,19 @@ DOCKER_FILES=\
 	Orchid/orchid \
 	Orchid/assets \
 	deploy/docker/config.ini
-	#armv5t/python/build/lib.linux-x86_64-3.10/armgliss.cpython-310-x86_64-linux-gnu.so
 CREATE_USER=$(PWD)/deploy/docker/create_user.py
 
 docker-prepare:
 	sudo rm -rf $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)
+	cp armv5t/python/arm_gliss.cpython-*.so $(DOCKER_DIR)/arm_gliss.so
 	cp -RL $(DOCKER_FILES) $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)/data
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "hugues" "!casse!" -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "thomas" "!carle!" -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "christine" "!rochange!" -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "pascal" "!sainrat!"  -g teacher
+	cd $(DOCKER_DIR); python3 $(CREATE_USER) "loic" "!sylvestre!"  -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "admin" "!ADMIN!"
 
 docker-base:
@@ -99,7 +100,7 @@ docker-base:
 
 export DOCKER_BUILDKIT=0
 docker:
-	cd armv5t; make binclean
+	#cd armv5t; make binclean
 	sudo docker build -f deploy/docker/Dockerfile -t bass:latest .
 
 docker-run:
@@ -111,5 +112,13 @@ docker-check:
 docker-stop:
 	sudo docker stop bass
 	sudo docker-clean -c
+
+docker-save:
+	sudo docker save bass:latest | gzip > bass.tar.gz
+	sudo chown casse:casse bass.tar.gz
+
+docker-clean:
+	rm bass.tar.gz
+
 
 # docker exec -ti ID /bin/bash

@@ -401,6 +401,12 @@ class Session(orc.Session):
 
 		# generate the page
 		self.console = orc.Console(init = "<b>Welcome to BASS!</b>\n")
+		self.console.set_style("background",
+			'linear-gradient(rgba(255,255,255,.85), rgba(255,255,255,.85)), url("logo.svg")')
+		self.console.set_style("background-repeat", "no-repeat")
+		self.console.set_style("background-position", "right 10px bottom 10px")
+		self.console.set_style("background-size", "25%")
+		self.console.set_style("background-color", "white")
 		#self.memory_pane = orc.Console(init = "Memory")
 		register_pane = RegisterPane().set_weight(1)
 		self.panes.append(register_pane)
