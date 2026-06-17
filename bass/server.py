@@ -19,7 +19,6 @@ import orchid as orc
 from orchid import popup
 from orchid import dialog
 
-import bass
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
 from bass.login import LoginDialog, RegisterDialog, SelectDialog
@@ -27,6 +26,7 @@ from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
 from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog
+from bass.arch import SimException
 
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -205,8 +205,8 @@ class Session(orc.Session):
 		# load the code
 		try:
 			self.sim.load(self.project.get_exec_path())
-		except bass.SimException as e:
-			self.console.append(orc.Text(orc.Error, f"ERROR: {e}"))
+		except SimException as e:
+			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
 
 		# prepare simulation
 		self.started.set(True)
@@ -488,7 +488,6 @@ class Session(orc.Session):
 			else:
 				done = False
 				for project in user.get_projects():
-
 					if project.get_name() == DEBUG_PROJECT:
 						project.load()
 						self.setup_project(project)
@@ -518,7 +517,7 @@ class Session(orc.Session):
 		# load the simulator
 		try:
 			self.sim = project.new_sim()
-		except bass.SimException as e:
+		except SimException as e:
 			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
 			self.sim = None
 		self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
@@ -826,7 +825,9 @@ class Application(orc.Application):
 		self.anon_thread = None
 		if self.anon_enable:
 			self.log("starting anonymous cleaning daemon")
-			self.anon_thread = threading.Thread(target=self.anon_daemon)
+			self.anon_thread = threading.Thread(
+				target=self.anon_daemon,
+				daemon=True)
 			self.anon_thread.start()
 
 	def get_default_group(self):
@@ -957,15 +958,15 @@ class Application(orc.Application):
 		for dir in glob.glob(f"{path}/anon-*"):
 			create_date = os.stat(dir).st_ctime
 			if create_date + lifetime < now:
+				self.log(f"remove anonymous {dir}")
 				shutil.rmtree(
 					dir,
-					onerror=lambda f, p, e:
-						self.log(f"cannot remove {p}: {e}")
+					onexc=lambda fun, path, info:
+						self.log(f"cannot remove {path}: {info[1]}")
 				)
 
 	def anon_daemon(self):
 		"""Function called to manage the thread for cleanining anonymous."""
-		print("DEBUG: anon_daemon()!")
 		delay = self.anon_removal*24*60*60
 		while True:
 			self.clean_anons()

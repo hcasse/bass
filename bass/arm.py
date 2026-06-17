@@ -19,10 +19,9 @@
 """ARM configuration for bass."""
 
 import arm_gliss as arm
-import bass
-from bass.arch import *
+from bass import arch
 
-class Arch(bass.Arch):
+class Arch(arch.Arch):
 	"""Architecture representation for ARM."""
 
 	NAMES = {
@@ -48,16 +47,16 @@ class Arch(bass.Arch):
 				(name, fmt, rcount, _, _) = arm.get_register_bank(bank)
 				if rcount == 1:
 					if name == "CPSR":
-						CPSR.append(CPSRegister(name, 0, handle=bank))
+						CPSR.append(arch.CPSRegister(name, 0, handle=bank))
 					else:
-						self.regs.append(Register(name, 0, handle=bank))
+						self.regs.append(arch.Register(name, 0, handle=bank))
 				else:
 					for i in range(rcount):
 						iname = fmt % i
 						try:
-							reg = AddrRegister(self.NAMES[iname], i, handle=bank)
+							reg = arch.AddrRegister(self.NAMES[iname], i, handle=bank)
 						except KeyError:
-							reg = Register(iname, i, handle=bank)
+							reg = arch.Register(iname, i, handle=bank)
 						if name == "R":
 							R.append(reg)
 						else:
@@ -80,12 +79,12 @@ class Arch(bass.Arch):
 			return None
 
 
-class Simulator(bass.Simulator):
+class Simulator(arch.Simulator):
 
 	ARCH = None
 
 	def __init__(self, template):
-		bass.Simulator.__init__(self, template)
+		arch.Simulator.__init__(self, template)
 
 		# initialize all
 		self.labels = None
@@ -111,7 +110,7 @@ class Simulator(bass.Simulator):
 		self.path = path
 		self.loader = arm.loader_open(self.path)
 		if self.loader is None:
-			raise bass.SimException(f"cannot load {self.path}")
+			raise arch.SimException(f"cannot load {self.path}")
 		arm.loader_load(self.loader, self.pf)
 		self.start = arm.loader_start(self.loader)
 		arm.set_next_address(self.sim, self.start)
@@ -170,8 +169,7 @@ class Simulator(bass.Simulator):
 	def get_word(self, addr):
 		return arm.mem_read32(self.mem, addr)
 
-	@staticmethod
-	def get_arch():
+	def get_arch(self):
 		if Simulator.ARCH is None:
 			Simulator.ARCH = Arch()
 		return Simulator.ARCH

@@ -18,12 +18,12 @@
 
 """CSim class module for interconnection with CSim library."""
 
-import bass
-from bass import arch
 from csimui.components import Board
 from csimui.util import BoardError
+import bass
+from bass import arch
 
-class Arch:
+class Arch(arch.Arch):
 	"""Representation of an architecture."""
 
 	def __init__(self, core):
@@ -36,8 +36,8 @@ class Arch:
 	def get_registers(self):
 		"""Get the list of register banks."""
 		if self.registers is None:
+			self.registers = []
 			for reg in self.core.get_registers():
-				bank = bass.RegisterBank()
 				for i in range(reg.get_count()):
 					self.registers.append(self.make_register(reg, i))
 		return self.registers
@@ -50,10 +50,10 @@ class Arch:
 
 	def make_register(self, reg, i):
 		"""Build a BASS register from a CSIM Register."""
-		return arch.Register(reg.get_name(), i, reg)
+		return arch.Register(reg.get_name(), (reg, i))
 
 
-class Simulator(bass.Simulator):
+class Simulator(arch.Simulator):
 	"""CSim is a generic simulator for micro-controller boards.
 	It support several architecture for the core execution and needs to be
 	embedded in a simulator wrapper providing display for the core."""
@@ -63,11 +63,11 @@ class Simulator(bass.Simulator):
 	def __init__(self, template):
 		"""Build a simulator for the passed template.
 		Raises SimException in case of error when building the board."""
-		bass.Simulator.__init__(self, template)
+		arch.Simulator.__init__(self, template)
 		try:
-			self.board = Board(self.get_board_path())
+			self.board = None	#Board(self.get_board_path())
 		except BoardError as exn:
-			raise bass.SimException(str(exn))
+			raise arch.SimException(str(exn))
 
 	def load(self, path):
 		"""Load the executable with the passed path. If there is an error,
@@ -75,7 +75,7 @@ class Simulator(bass.Simulator):
 		try:
 			self.board.load_bin(path)
 		except BoardError as exn:
-			raise bass.SimException(str(exn))
+			raise arch.SimException(str(exn))
 
 	def reset(self):
 		"""Reset the simulator."""

@@ -70,6 +70,7 @@ Add toolbar for:
 
 ## System
 
+[ ] Support encrypting of passwords.
 [ ] Add template with input-output.
 [ ] Implements keyword retrieval.
 [ ] Manage removal of anonymous too old.

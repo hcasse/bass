@@ -18,13 +18,41 @@
 
 """Common architecture useful definitions."""
 
-import bass
+from bass import Format, MessageException, RegDisplay
 
-class Register(bass.Register):
+class SimException(MessageException):
+	"""Exception thrown when an error arises in the simulation."""
+
+	def __init__(self, msg):
+		MessageException.__init__(self, msg)
+
+
+class AbstractRegister:
+	"""Represents a register in the simulator. Handle may be any value to
+	represent register in the underlying simulator."""
+
+	def __init__(self, name, handle=None):
+		self.name = name
+		self.handle = handle
+
+	def get_name(self):
+		"""Get the register name."""
+		return self.name
+
+	def format(self, value):
+		"""Get formatted value of the register for human display."""
+		return str(value)
+
+	def get_format(self):
+		"""Get the format used by this register."""
+		pass
+
+
+class Register(AbstractRegister):
 	"""Simple decimal register displat."""
 
-	def __init__(self, name, index, format=bass.RegDisplay.SIGNED, handle=None):
-		bass.Register.__init__(self, name, handle)
+	def __init__(self, name, index, format=RegDisplay.SIGNED, handle=None):
+		AbstractRegister.__init__(self, name, handle)
 		self.index = index
 		self.fmt = format
 
@@ -39,7 +67,7 @@ class AddrRegister(Register):
 	"""Register containing an address."""
 
 	def __init__(self, name, index, handle=None):
-		Register.__init__(self, name, index, bass.RegDisplay.HEX, handle)
+		Register.__init__(self, name, index, RegDisplay.HEX, handle)
 
 	def format(self, value):
 		return f"{value:08x}"
@@ -76,7 +104,98 @@ class CPSRegister(Register):
 			M = "Invalid"
 		return f"{N}{Z}{C}{V} {E}{A}{I}{F} {M}"
 
-	FORMAT = bass.Format(None, do_format, custom = True)
+	FORMAT = Format(None, do_format, custom = True)
 
 	def __init__(self, name, index, handle=None):
 		Register.__init__(self, "CPSR", index, self.FORMAT, handle)
+
+
+class Arch:
+	"""Representation of an architecture."""
+
+	def get_name(self):
+		"""Get the name of the architecture."""
+		return "<no name>"
+
+	def get_registers(self):
+		"""Get the list of register banks."""
+		return []
+
+	def find_register(self, name):
+		"""Find a register by its name. Return None if the register cannot be
+		found."""
+		return None
+
+
+class Simulator:
+	"""Interface to the simulator."""
+
+	def __init__(self, template):
+		"""Build a simulator."""
+		self.template = template
+
+	def get_template(self):
+		"""Get the template that supports the simulator."""
+		return self.template
+
+	def load(self, path):
+		"""Load the executable with the passed path. If there is an error,
+		raises a SimException."""
+		pass
+
+	def reset(self):
+		"""Reset the simulator."""
+		pass
+
+	def release(self):
+		"""Release the simulator."""
+		pass
+
+	def set_break(self, addr):
+		"""Set a breakpoint to the given address."""
+		pass
+
+	def get_pc(self):
+		"""Get the address of the PC."""
+		return None
+
+	def next_pc(self):
+		"""Get the address of the next instruction."""
+		return None
+
+	def step(self):
+		"""Execute the current instruction and stop."""
+		pass
+
+	def get_register(self, reg):
+		"""Get the value of a register."""
+		return None
+
+	def set_register(self, reg, value):
+		"""Set the value of a register."""
+		pass
+
+	def get_arch(self):
+		"""Get the architecture of the simulator."""
+		return None
+
+	def get_frequency(self):
+		"""Get the frequency of the simulator in Hz."""
+		return 100
+
+	def get_date(self):
+		"""Get the date in cycles."""
+		return 0
+
+	def get_byte(self, addr):
+		"""Get the byte at the given address."""
+		return None
+
+	def get_half(self, addr):
+		"""Get unsigned 16b integer."""
+		return None
+
+	def get_word(self, addr):
+		"""Get unsigned 32b integer."""
+		return None
+

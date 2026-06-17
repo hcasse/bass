@@ -20,11 +20,12 @@ export PYTHONPATH=$(PYTHON_PATH):$(BASS_PATH):$(ORCHID_PATH):$(CSIM_PATH)/python
 all:
 
 run:
-	echo "PYTHON_PATH=$(PYTHONPATH)"
+	$(PYTHON) -m bass.server
+
+run-debug:
 	$(PYTHON) -m bass.server --debug
 
-
-debug:
+debug-fast:
 	$(PYTHON) -m bass.server --debug-user moi --debug-project=sum --verbose
 
 test:
