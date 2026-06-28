@@ -80,7 +80,8 @@ DOCKER_FILES=\
 	bass \
 	Orchid/orchid \
 	Orchid/assets \
-	deploy/docker/config.ini
+	deploy/docker/config.ini \
+	deploy/docker/docker-compose.yaml
 CREATE_USER=$(PWD)/deploy/docker/create_user.py
 
 docker-prepare:
@@ -121,5 +122,7 @@ docker-save:
 docker-clean:
 	rm bass.tar.gz
 
+docker-deploy: docker-prepare
+	cd $(DOCKER_DIR); tar cvfz deploy.tgz docker-compose.yaml data
 
 # docker exec -ti ID /bin/bash

@@ -47,6 +47,10 @@ class AbstractRegister:
 		"""Get the format used by this register."""
 		pass
 
+	def get_handle(self):
+		"""Get the handle of this register."""
+		return self.handle
+
 
 class Register(AbstractRegister):
 	"""Simple decimal register displat."""
@@ -61,6 +65,10 @@ class Register(AbstractRegister):
 
 	def get_format(self):
 		return self.fmt
+
+	def get_index(self):
+		"""Get the index of the register."""
+		return self.index
 
 
 class AddrRegister(Register):

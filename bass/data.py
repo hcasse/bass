@@ -344,7 +344,6 @@ class Project:
 		files = " ".join(os.path.join(self.get_name(), file)
 			for file in self.template.install)
 		cmd = f"tar cvfz {to} {files}"
-		print("DEBUG: cmd =", cmd)
 		res = subprocess.run(cmd, shell=True, cwd=self.user.get_path())
 		if res.returncode != 0:
 			raise DataException("cannot build the archive!")
@@ -416,7 +415,6 @@ class User:
 
 	def save(self):
 		"""Save the user file."""
-		print("DEBUG:", self.name, self.groups)
 		config = configparser.ConfigParser()
 		config['user'] = {}
 		config['user']['email'] = self.email

@@ -18,20 +18,35 @@
 
 """CSim class module for interconnection with CSim library."""
 
-from csimui.components import Board
-from csimui.util import BoardError
-import bass
+from csim import Board, BoardError
 from bass import arch
+
 
 class Arch(arch.Arch):
 	"""Representation of an architecture."""
 
+	@staticmethod
+	def makeArmR(reg, i):
+		if i == 13:
+			return arch.AddrRegister("SP", i, handle=reg)
+		elif i == 14:
+			return arch.AddrRegister("LR", i, handle=reg)
+		elif i == 15:
+			return arch.AddrRegister("PC", i, handle=reg)
+		else:
+			return arch.Register(reg.make_name(i), i, handle=reg)
+
+	MAP = {
+		("arm", "CPSR"):
+			lambda reg, i: arch.CPSRegister("CPSR", i, handle=reg),
+		("arm", "R"):
+			lambda reg, i: Arch.makeArmR(reg, i)
+	}
+
 	def __init__(self, core):
 		self.core = core
 		self.registers = None
-
-	def get_name(self):
-		return self.core.get_name()
+		self.name = self.core.get_name()
 
 	def get_registers(self):
 		"""Get the list of register banks."""
@@ -50,7 +65,10 @@ class Arch(arch.Arch):
 
 	def make_register(self, reg, i):
 		"""Build a BASS register from a CSIM Register."""
-		return arch.Register(reg.get_name(), (reg, i))
+		try:
+			return self.MAP[(self.core.get_component_name(), reg.get_name())](reg, i)
+		except KeyError:
+			return arch.Register(reg.make_name(i), i, handle=reg)
 
 
 class Simulator(arch.Simulator):
@@ -58,16 +76,16 @@ class Simulator(arch.Simulator):
 	It support several architecture for the core execution and needs to be
 	embedded in a simulator wrapper providing display for the core."""
 
-	ARCH = None
-
 	def __init__(self, template):
 		"""Build a simulator for the passed template.
 		Raises SimException in case of error when building the board."""
 		arch.Simulator.__init__(self, template)
 		try:
-			self.board = None	#Board(self.get_board_path())
+			self.board = Board(template.get_board_path())
 		except BoardError as exn:
-			raise arch.SimException(str(exn))
+			raise arch.SimException(f"cannot load board {template.get_board_path()}: {exn}")
+		self.arch = Arch(self.board.get_core())
+		self.breaks = []
 
 	def load(self, path):
 		"""Load the executable with the passed path. If there is an error,
@@ -75,7 +93,7 @@ class Simulator(arch.Simulator):
 		try:
 			self.board.load_bin(path)
 		except BoardError as exn:
-			raise arch.SimException(str(exn))
+			raise arch.SimException(f"error during load of {path}: {exn}.")
 
 	def reset(self):
 		"""Reset the simulator."""
@@ -88,49 +106,49 @@ class Simulator(arch.Simulator):
 
 	def set_break(self, addr):
 		"""Set a breakpoint to the given address."""
-		pass
+		self.breaks.append(addr)
 
 	def get_pc(self):
 		"""Get the address of the PC."""
-		return None
+		return self.board.get_pc()
 
 	def next_pc(self):
 		"""Get the address of the next instruction."""
-		return None
+		return self.board.get_pc() + self.board.inst_size()
 
 	def step(self):
 		"""Execute the current instruction and stop."""
-		pass
+		self.board.run(1)
 
 	def get_register(self, reg):
 		"""Get the value of a register."""
-		return None
+		return reg.get_handle().get_value(reg.get_index())
 
 	def set_register(self, reg, value):
 		"""Set the value of a register."""
-		pass
+		return reg.get_handle().set_value(reg.get_index(), value)
 
 	def get_arch(self):
 		"""Get the architecture of the simulator."""
-		return None
+		return self.arch
 
 	def get_frequency(self):
 		"""Get the frequency of the simulator in Hz."""
-		return 100
+		return 1000
 
 	def get_date(self):
 		"""Get the date in cycles."""
-		return 0
+		return self.board.get_date()
 
 	def get_byte(self, addr):
 		"""Get the byte at the given address."""
-		return None
+		return self.board.byte_at(addr)
 
 	def get_half(self, addr):
 		"""Get unsigned 16b integer."""
-		return None
+		return self.board.half_at(addr)
 
 	def get_word(self, addr):
 		"""Get unsigned 32b integer."""
-		return None
+		return self.board.word_at(addr)
 

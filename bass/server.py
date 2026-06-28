@@ -18,6 +18,7 @@ import time
 import orchid as orc
 from orchid import popup
 from orchid import dialog
+from orchid import mind
 
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
@@ -73,7 +74,8 @@ class Session(orc.Session):
 		self.stop_icon = orc.Icon(orc.IconType.STOP, color="red")
 		self.compile_action = orc.Action(self.compile,
 			icon=orc.Icon(orc.IconType.CHECK), help="Compile the project.")
-		self.playstop_action = orc.Action(self.playstop, enable=self.compiled,
+		self.playstop_action = orc.Action(self.playstop,
+			enable=mind.and_(self.compiled, lambda: self.sim),
 			icon=self.start_icon,
 			help="Play/stop the simulation.")
 		paused = self.started & orc.not_(self.running)
@@ -341,9 +343,11 @@ class Session(orc.Session):
 		self.console.append(line)
 
 	def help(self):
+		"""Display help dialog."""
 		pass
 
 	def about(self):
+		"""Display about dialog;"""
 		d=dialog.About(self.page)
 		d.show()
 
@@ -517,10 +521,10 @@ class Session(orc.Session):
 		# load the simulator
 		try:
 			self.sim = project.new_sim()
-		except SimException as e:
+			self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
+		except (SimException, DataException) as e:
 			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
 			self.sim = None
-		self.quantum_inst = int(self.sim.get_frequency() / self.sim_freq)
 
 		# setup editors
 		for file in project.get_sources():
