@@ -1,0 +1,26 @@
+# Configuration Variables
+#   BASS_VERSION    0.1         (default 0.1)
+#   BASS_USER       32802       (default 0)
+#   BASS_GROUP      32801       (default 0)
+#   BASS_DATA       /nfs/bass   (default /nfs/bass)
+#   BASS_HOST_PORT  8079        (default 0)
+#   BASS_CONT_PORT  8888        (default 0)
+
+services:
+
+  bass:
+    image: hcasse/bass:${BASS_VERSION:-0.1}
+    init: True  # i.e this enables tini :)
+    restart: unless-stopped
+    # container_name implies only one instance
+    container_name: "bass"
+    user: "${BASS_USER:-0}:${BASS_GROUP:-0}" # mandatory for hardware access ??
+    privileged: ${_privileged:-false}
+    volumes:
+      - ${BASS_DATA:-/nfs/bass}:/bass/data
+    network_mode: bridge
+    # Port mapping between the localhost and the container
+    ports:
+      - ${BASS_HOST_PORT:-0}:${BASS_CONT_PORT:-0}
+    devices:
+    environment:

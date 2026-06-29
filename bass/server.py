@@ -28,7 +28,7 @@ from bass.registers import RegisterPane
 from bass.memory import MemoryPane
 from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog
 from bass.arch import SimException
-
+from bass import io
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
 
@@ -418,7 +418,9 @@ class Session(orc.Session):
 		#self.panes.append(editor_pane)
 		memory_pane = MemoryPane()
 		self.panes.append(memory_pane)
-		self.addons = orc.TabbedPane([("Memory", memory_pane)])
+		io_pane = io.Pane()
+		self.panes.append(io_pane)
+		self.addons = orc.TabbedPane([("Memory", memory_pane), ("Input/Output", io_pane)])
 		editor_group = orc.HGroup([
 			self.editors,
 			self.addons

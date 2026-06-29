@@ -152,3 +152,5 @@ class Simulator(arch.Simulator):
 		"""Get unsigned 32b integer."""
 		return self.board.word_at(addr)
 
+	def get_board(self):
+		return self.board

@@ -207,3 +207,9 @@ class Simulator:
 		"""Get unsigned 32b integer."""
 		return None
 
+	def get_board(self):
+		"""If any,n get the CSIM board of the simulation.
+		If there is no board, return None."""
+		return None
+
+
