@@ -29,7 +29,7 @@ class Pane(Display, ApplicationPane):
 		self.board = None
 
 	def on_project_set(self, session, project):
-		pass
+		self.remove_all()
 
 	def on_sim_start(self, session, sim):
 		if self.board is None:
