@@ -143,6 +143,10 @@ class ApplicationPane:
 		"""Called each time the simulator state needs to be updated."""
 		pass
 
+	def on_sim_release(self, session, sim):
+		"""Called just before the simulator is released."""
+		pass
+
 	def on_save(self, session, on_done):
 		"""Called to save tje sources. Each pane call on_done() when the
 		save is done. This allows to support asynchronous for editor saving.

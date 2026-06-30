@@ -513,6 +513,8 @@ class Session(orc.Session):
 
 		# clean simulator
 		if self.sim is not None:
+			for pane in self.panes:
+				pane.on_sim_release(self, self.sim)
 			self.sim.release()
 			self.sim = None
 

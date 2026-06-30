@@ -91,7 +91,6 @@ function disasm_single_click(disasm, event) {
 		self.update_disasm = False
 		self.map = None				# address -> index
 		self.pc_row = None
-		self.breakpoints = None
 		self.selected = None
 
 		self.add_class('text-back')
@@ -167,11 +166,11 @@ function disasm_single_click(disasm, event) {
 		except KeyError:
 			new_pc_row = None
 		if new_pc_row != self.pc_row:
-			if self.pc_row is not None:
+			if self.pc_row is not None and self.is_shown():
 				self.remove_class('disasm-current',
 					id=f"{self.get_id()}-body", nth=self.pc_row)
 			self.pc_row = new_pc_row
-			if self.pc_row is not None:
+			if self.pc_row is not None and self.is_shown():
 				self.add_class('disasm-current',
 					id=f"{self.get_id()}-body", nth=self.pc_row)
 
@@ -180,10 +179,15 @@ function disasm_single_click(disasm, event) {
 		session.get_breakpoints().add_observer(self)
 		session.get_current_addr().add_observer(self)
 
+	def on_end(self, session):
+		self.session = None
+		session.get_breakpoints().remove_observer(self)
+		session.get_current_addr().remove_observer(self)
+
 	def on_compiled(self, session):
 		self.disasm = None
 		self.update_disasm = True
-		self.deselect()
+		self.selected = None
 		if self.is_shown():
 			self.on_show()
 

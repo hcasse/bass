@@ -28,9 +28,6 @@ class Pane(Display, ApplicationPane):
 		Display.__init__(self)
 		self.board = None
 
-	def on_project_set(self, session, project):
-		self.remove_all()
-
 	def on_sim_start(self, session, sim):
 		if self.board is None:
 			self.board = sim.get_board()
@@ -41,3 +38,6 @@ class Pane(Display, ApplicationPane):
 		if self.board:
 			self.board.update_input()
 
+	def on_sim_release(self, session, sim):
+		self.remove_all()
+		self.board = None
