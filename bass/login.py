@@ -6,6 +6,8 @@ from orchid import \
 	Button, PasswordField, Label, hspring, matches, if_error, equals, \
 	Predicate, EmailField, ListVar, Form, not_null, is_password, Key, is_null
 from orchid import dialog
+from orchid import displayable
+from orchid import models
 from bass import project_name_pred
 
 class LoginDialog(dialog.Base):
@@ -116,6 +118,24 @@ class RegisterDialog(dialog.Base):
 		"""Get the typed email."""
 		return ~self.email
 
+
+class TemplateDisplayer(models.ItemDisplayer):
+	"""List displayer for project."""
+
+	def make(self, template):
+		return displayable.definition(
+			displayable.text(template.get_label()),
+			displayable.text(template.get_desc()),
+		)
+
+
+class ProjectDisplayer(models.ItemDisplayer):
+	"""Displayer for projects."""
+
+	def make(self, project):
+		return displayable.Text(f"{project.get_name()} ({project.get_template().get_label()})")
+
+
 class SelectDialog(dialog.Base):
 
 	def __init__(self, server, page):
@@ -153,14 +173,22 @@ class SelectDialog(dialog.Base):
 			HGroup([
 				VGroup([
 					Label("Open project:"),
-					ListView(self.projects, selection=self.selected_project),
+					ListView(
+						self.projects,
+						selection=self.selected_project,
+						displayer = ProjectDisplayer()
+					),
 					HGroup([hspring(), Button(open_project)])
 				]),
 				VGroup([
 					Label("Create project:"),
 					Field(self.name, place_holder="name"),
 					Label("Select template:"),
-					ListView(self.templates, selection=self.selected_template),
+					ListView(
+						self.templates,
+						selection=self.selected_template,
+						displayer = TemplateDisplayer()
+					),
 					HGroup([hspring(), Button(create_project)])
 				])
 			]),
@@ -173,9 +201,11 @@ class SelectDialog(dialog.Base):
 
 	def show(self):
 		dialog.Base.show(self)
+		self.name.set(None)
 		self.projects.clear()
 		for project in self.server.get_user().get_projects():
 			self.projects.append(project)
+		self.selected_template.clear()
 
 	def error(self, msg):
 		self.msg.show_error(msg)

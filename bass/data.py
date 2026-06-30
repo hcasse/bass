@@ -122,10 +122,15 @@ class Template:
 		self.install = []
 		self.board = None
 		self.enabled = True
+		self.label = name
 
 	def get_name(self):
 		"""Get the name of the template."""
 		return self.name
+
+	def get_label(self):
+		"""Get human-readable name."""
+		return self.label
 
 	def is_hidden(self, file):
 		"""Check if the given file is hidden, not show to the user, in the current template."""
@@ -140,6 +145,7 @@ class Template:
 		path = os.path.join(self.path, "template.ini")
 		config = configparser.ConfigParser()
 		config.read(path)
+		self.label = config.get("template", "name", fallback=self.name)
 		self.description = config.get("template", "description", fallback="")
 		self.hide = config.get("template", "hide", fallback="").split(";")
 		self.exec = config.get("template", "exec", fallback="main.elf")
@@ -153,6 +159,10 @@ class Template:
 	def has_board(self):
 		"""Test if the template has a board."""
 		return self.board is not None
+
+	def get_desc(self):
+		"""Get the description."""
+		return self.description
 
 	def get_board_path(self):
 		"""Get the path of the board."""
@@ -198,6 +208,10 @@ class Project:
 	def get_name(self):
 		"""Get the name of the project."""
 		return self.name
+
+	def get_template(self):
+		"""Get the template of the project."""
+		return self.template
 
 	def get_path(self):
 		"""Get the path to the directory of the project."""
