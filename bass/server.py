@@ -19,6 +19,7 @@ import orchid as orc
 from orchid import popup
 from orchid import dialog
 from orchid import mind
+from orchid import split
 
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
@@ -421,10 +422,10 @@ class Session(orc.Session):
 		io_pane = io.Pane()
 		self.panes.append(io_pane)
 		self.addons = orc.TabbedPane([("Memory", memory_pane), ("Input/Output", io_pane)])
-		editor_group = orc.HGroup([
+		editor_group = split.Pane(
 			self.editors,
 			self.addons
-		])
+		)
 		editor_group.weight = 3
 		self.console.weight = 1
 		self.timeout_button = orc.TwoStateButton(self.sim_timeout,
@@ -449,13 +450,14 @@ class Session(orc.Session):
 					orc.Button(orc.Icon(orc.IconType.HELP), on_click=self.help),
 					orc.Button(orc.Icon(orc.IconType.ABOUT), on_click=self.about)
 				]),
-				orc.HGroup([
+				split.Pane(
 					register_pane,
-					orc.VGroup([
+					split.Pane(
 						editor_group,
-						self.console
-					]).set_weight(4)
-				]),
+						self.console,
+						vert=True
+					).set_weight(4)
+				),
 				orc.StatusBar([
 					orc.hspring(),
 					orc.Field(self.date, read_only=True, place_holder="date"),
