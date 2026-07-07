@@ -18,8 +18,10 @@ import time
 import orchid as orc
 from orchid import popup
 from orchid import dialog
+from orchid import image
 from orchid import mind
 from orchid import split
+from orchid.image import AssetImage
 
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
@@ -349,7 +351,13 @@ class Session(orc.Session):
 
 	def about(self):
 		"""Display about dialog;"""
-		d=dialog.About(self.page)
+		d=dialog.About(self.page,
+			contribs = [
+				orc.PYTHON_CONTRIB,
+				(image.AssetImage("gliss.svg"), "Gliss", "https://www.irit.fr/otawa/pages/gliss2.html"),
+				(image.AssetImage("ace.png"), "Ace Editor", "https://ace.c9.io/")
+			]
+		)
 		d.show()
 
 	def eventResetButton(self):
@@ -787,7 +795,8 @@ class Application(orc.Application):
 			description = "Machine level simulator.",
 			license = "GPL v3",
 			copyright = "Copyright (c) 2023, University of Toulouse 3",
-			website="https://github.com/hcasse/bass"
+			website="https://github.com/hcasse/bass",
+			icon="logo-bass.svg"
 		)
 
 		# prepare data
