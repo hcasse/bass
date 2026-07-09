@@ -6,6 +6,8 @@ from orchid import \
 		MessageLabel
 from orchid import dialog, MessageType
 from bass import project_name_pred
+from orchid import group
+from orchid import doc
 
 class RenameDialog(dialog.Base):
 	"""An action tor rename the project."""
@@ -83,3 +85,25 @@ class ErrorDialog(dialog.Message):
 		self.show()
 
 
+class HelpDialog(dialog.Base):
+	"""Dialog to display help."""
+
+	DOCS = [
+		("Usage", "docs/usage.html"),
+		("Debugging", "docs/debug.html"),
+		("ARM Programming", "docs/arm.html")
+	]
+
+	def __init__(self, session):
+		close_action = Action(fun=lambda _: self.hide(), label="Close")
+		main = \
+			group.Column([
+				doc.Pane(self.DOCS),
+				group.Row([
+					hspring(),
+					Button(close_action),
+				])
+			])
+		dialog.Base.__init__(self, session.get_page(), main, title="Help")
+		self.set_style("min-width", "75%")
+		self.set_style("min-height", "75%")

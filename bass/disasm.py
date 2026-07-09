@@ -183,6 +183,7 @@ function disasm_single_click(disasm, event) {
 		self.session = None
 		session.get_breakpoints().remove_observer(self)
 		session.get_current_addr().remove_observer(self)
+		self.update_disasm = False
 
 	def on_compiled(self, session):
 		self.disasm = None

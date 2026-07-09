@@ -29,7 +29,7 @@ from bass.login import LoginDialog, RegisterDialog, SelectDialog
 from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
-from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog
+from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog, HelpDialog
 from bass.arch import SimException
 from bass import io
 
@@ -132,6 +132,7 @@ class Session(orc.Session):
 		self.rename_dialog = None
 		self.delete_dialog = None
 		self.error_dialog = None
+		self.help_dialog = None
 
 	def release(self):
 		orc.Session.release(self)
@@ -347,7 +348,9 @@ class Session(orc.Session):
 
 	def help(self):
 		"""Display help dialog."""
-		pass
+		if not self.help_dialog:
+			self.help_dialog = HelpDialog(self)
+		self.help_dialog.show()
 
 	def about(self):
 		"""Display about dialog;"""
