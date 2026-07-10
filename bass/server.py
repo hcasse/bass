@@ -134,6 +134,10 @@ class Session(orc.Session):
 		self.error_dialog = None
 		self.help_dialog = None
 
+	def on_crash(self, page, exn):
+		self.get_logger().exception("crash")
+		return "/crash.html"
+
 	def release(self):
 		orc.Session.release(self)
 		if self.user is None:
