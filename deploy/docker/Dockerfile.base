@@ -3,7 +3,9 @@ WORKDIR /bass
 EXPOSE 8888
 
 # things to install
-RUN apt-get -y update && apt-get -y install python3 gcc-arm-none-eabi make gcc
+RUN apt-get -y update && apt-get -y install python3 make gcc python3-yaml
+RUN apt-get install -y --no-install-recommends gcc-arm-none-eabi
+
 # python3-setuptools python3-dev
 
 

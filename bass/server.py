@@ -821,6 +821,7 @@ class Application(orc.Application):
 		self.anon_lifetime = int(config.get("bass", "anon_lifetime", fallback=1))
 		self.anon_removal = int(config.get("bass", "anon_removal", fallback=1))
 		self.register_enable = config.get("bass", "register_enable", fallback="yes") == "yes"
+		self.template_path = config.get("bass", "template_dir", fallback="templates")
 
 		# finalize configuration
 		self.data_dir = os.path.join(os.getcwd(), self.data_dir)
@@ -840,7 +841,7 @@ class Application(orc.Application):
 		self.load_passwords()
 
 		# load templates
-		self.template_path = os.path.join(self.base_dir, "templates")
+		#self.template_path = os.path.join(self.base_dir, "templates")
 		self.load_templates()
 
 		# run threads

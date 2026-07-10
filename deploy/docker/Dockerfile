@@ -9,9 +9,10 @@ EXPOSE 8888
 # copy applications
 ADD tmp/bass/bass			/bass/bass
 ADD tmp/bass/orchid			/bass/orchid
-ADD tmp/bass/assets			/bass/assets
+ADD tmp/bass/csim			/bass/csim
 COPY tmp/bass/*.ini			/bass/
 COPY tmp/bass/arm_gliss.so	/bass/
+COPY tmp/bass/libcsim.so	/bass/
 
 # command to launch
 WORKDIR /bass

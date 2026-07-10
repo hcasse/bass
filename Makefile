@@ -79,15 +79,16 @@ DOCKER_DIR=tmp/bass
 DOCKER_FILES=\
 	bass \
 	Orchid/orchid \
-	Orchid/assets \
+	csim/python/csim \
 	deploy/docker/config.ini \
 	deploy/docker/docker-compose.yaml
-CREATE_USER=$(PWD)/deploy/docker/create_user.py
+CREATE_USER=../../deploy/docker/create_user.py
 
 docker-prepare:
 	sudo rm -rf $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)
 	cp armv5t/python/arm_gliss.cpython-*.so $(DOCKER_DIR)/arm_gliss.so
+	cp csim/python/libcsim.cpython-*.so $(DOCKER_DIR)/libcsim.so
 	cp -RL $(DOCKER_FILES) $(DOCKER_DIR)
 	mkdir $(DOCKER_DIR)/data
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "hugues" "!casse!" -g teacher
@@ -96,6 +97,7 @@ docker-prepare:
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "pascal" "!sainrat!"  -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "loic" "!sylvestre!"  -g teacher
 	cd $(DOCKER_DIR); python3 $(CREATE_USER) "admin" "!ADMIN!"
+	cp -R templates $(DOCKER_DIR)/data
 
 docker-base:
 	sudo docker build -f deploy/docker/Dockerfile.base -t bass:base .
@@ -106,7 +108,7 @@ docker:
 	sudo docker build -f deploy/docker/Dockerfile -t bass:latest .
 
 docker-run:
-	sudo docker run -p 8888:8888 --name bass --mount type=bind,source=$(abspath $(DOCKER_DIR)/data),target=/bass/data -i -t bass:latest
+	sudo docker run -p 8888:8888 --name bass --mount type=bind,source=$(abspath $(DOCKER_DIR)/data),target=/data -i -t bass:latest
 
 docker-check:
 	sudo docker run -i -t bass:latest bash

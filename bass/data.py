@@ -123,6 +123,7 @@ class Template:
 		self.board = None
 		self.enabled = True
 		self.label = name
+		self.order = 0
 
 	def get_name(self):
 		"""Get the name of the template."""
@@ -140,6 +141,10 @@ class Template:
 		"""Test if the template is enabled."""
 		return self.enabled
 
+	def get_order(self):
+		"""Get ordering number for display in selection dialog."""
+		return self.order
+
 	def load(self):
 		"""Load the template from its description file."""
 		path = os.path.join(self.path, "template.ini")
@@ -155,6 +160,7 @@ class Template:
 		self.sim = config.get("template", "sim", fallback=self.sim)
 		self.board = config.get("template", "board", fallback=None)
 		self.enabled = config.get("template", "enabled", fallback="yes") == "yes"
+		self.order = config.getint("template", "order", fallback=0)
 
 	def has_board(self):
 		"""Test if the template has a board."""
