@@ -1026,6 +1026,7 @@ if __name__ == '__main__':
 		print("ERROR:", str(e))
 	if args.data_dir:
 		config["bass"]["datadir"] = args.data_dir
+	proxy = config['server']['proxy']
 
 	# convert argument to configuration
 	DEBUG_USER = args.debug_user
@@ -1044,4 +1045,5 @@ if __name__ == '__main__':
 		dirs=[assets],
 		debug=DEBUG,
 		port=port,
-		server=True)
+		server=True,
+		proxy=proxy)

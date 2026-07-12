@@ -9,7 +9,7 @@
 services:
 
   bass:
-    image: hcasse/bass:${BASS_VERSION:-0.1}
+    image: hcasse/bass:${BASS_VERSION:latest}
     init: True  # i.e this enables tini :)
     restart: unless-stopped
     # container_name implies only one instance

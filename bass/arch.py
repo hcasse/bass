@@ -159,8 +159,12 @@ class Simulator:
 		"""Release the simulator."""
 		pass
 
-	def set_break(self, addr):
+	def set_breakpoint(self, addr):
 		"""Set a breakpoint to the given address."""
+		pass
+
+	def clear_breakpoint(self, addr):
+		"""Clear a breakpoint."""
 		pass
 
 	def get_pc(self):
