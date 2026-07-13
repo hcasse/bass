@@ -122,18 +122,18 @@ class RegisterDialog(dialog.Base):
 class TemplateDisplayer(models.ItemDisplayer):
 	"""List displayer for project."""
 
-	def make(self, template):
+	def make(self, x):
 		return displayable.definition(
-			displayable.text(template.get_label()),
-			displayable.text(template.get_desc()),
+			displayable.text(x.get_label()),
+			displayable.text(x.get_desc()),
 		)
 
 
 class ProjectDisplayer(models.ItemDisplayer):
 	"""Displayer for projects."""
 
-	def make(self, project):
-		return displayable.Text(f"{project.get_name()} ({project.get_template().get_label()})")
+	def make(self, x):
+		return displayable.Text(f"{x.get_name()} ({x.get_template().get_label()})")
 
 
 class SelectDialog(dialog.Base):

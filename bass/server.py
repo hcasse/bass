@@ -20,8 +20,8 @@ from orchid import popup
 from orchid import dialog
 from orchid import image
 from orchid import mind
+from orchid import models
 from orchid import split
-from orchid.image import AssetImage
 
 from bass.ace_editor import CodeEditor
 from bass.disasm import DisasmPane
@@ -30,7 +30,7 @@ from bass.data import Project, Template, User, DataException
 from bass.registers import RegisterPane
 from bass.memory import MemoryPane
 from bass.dialogs import RenameDialog, DeleteDialog, ErrorDialog, HelpDialog
-from bass.arch import SimException
+from bass.arch import SimException, Run
 from bass import io
 
 LINE_RE = re.compile(r"^([^\.]+\.[^:]:[0-9]+:).*$")
@@ -50,6 +50,26 @@ class Session(orc.Session):
 		orc.Session.__init__(self, app, man)
 		self.app = app
 
+		# break-point observer
+		class BreakPointObserver(models.SetObserver):
+			"""Observer of changes in the break-points."""
+
+			def __init__(self, session):
+				self.session = session
+
+			def on_clear(self, set):
+				self.session.clear_breakpoints()
+
+			def on_change(self, set):
+				self.session.clear_breakpoints()
+				self.session.set_breakpoints(set)
+
+			def on_add(self, set, item):
+				self.session.set_breakpoint(item)
+
+			def on_remove(self, set, item):
+				self.session.clear_breakpoint(item)
+
 		# get configuration
 		self.sim_freq = app.get_config("sim_freq", 5)
 
@@ -68,7 +88,8 @@ class Session(orc.Session):
 			icon=orc.Icon(orc.IconType.STOPWATCH, color="green"))
 		self.timeout_icon = orc.Icon(orc.IconType.STOPWATCH, color="red")
 		self.breakpoints = orc.SetVar(set(), item_type=int)
-		self.stop_on = self.is_breakpoint
+		self.breakpoints.add_observer(BreakPointObserver(self))
+		self.restore_bp = False
 		self.bp_to_remove = set()
 		self.current_addr = orc.Var(None, type=int)
 
@@ -180,37 +201,61 @@ class Session(orc.Session):
 		"""Test if the given PC is a breakpoint."""
 		return pc in ~self.breakpoints
 
+	def set_breakpoint(self, addr):
+		"""Add a breakpoint to the simulator."""
+		if self.sim:
+			self.sim.set_breakpoint(addr)
+
+	def clear_breakpoint(self, addr):
+		"""Remove breakpoint from the simulator."""
+		if self.sim:
+			self.sim.clear_breakpoint(addr)
+
+	def clear_breakpoints(self):
+		"""Remove all breakpoints."""
+		if self.sim:
+			for addr in ~self.breakpoints:
+				self.clear_breakpoint(addr)
+
+	def set_breakpoints(self, bps=None):
+		"""Set all the breakpoints in the simulator."""
+		if self.sim:
+			if bps is None:
+				bps = ~self.breakpoints
+			for addr in bps:
+				self.set_breakpoint(addr)
+
 	def execute_quantum(self):
+		"""Execute a quantum of instruction if not interrupted by a BP."""
 		timeout = time.time() + self.quantum_period / 1000
-		for _ in range(self.quantum_inst):
-			self.sim.step()
-			if time.time() >= timeout:
-				self.sim_timeout.set(False)
-				break
-			pc = self.sim.get_pc()
-			if self.stop_on(pc):
-				self.complete_quantum()
-				return
-		self.sim_timeout.set(True)
+		result = self.sim.run(self.quantum_inst)
+		if time.time() >= timeout:
+			self.sim_timeout.set(True)
+		if result == Run.BP:
+			self.complete_quantum()
+		else:
+			self.update_sim_display()
+
+	def complete_quantum(self):
+		"""Complete an execution sequence."""
+		if self.restore_bp:
+			self.restore_bp = False
+			self.clear_breakpoints()
+			self.set_breakpoints()
 		self.update_sim_display()
+		self.sim_timer.stop()
+		self.running.set(False)
+		self.sim_timeout.set(False)
 
 	def get_sim(self):
 		"""Get the current simulator."""
 		return self.sim
 
-	def complete_quantum(self):
-		self.sim_timer.stop()
-		self.running.set(False)
-		self.sim_timeout.set(False)
-		self.update_sim_display()
-		self.stop_on = self.is_breakpoint
-
 	def start_sim(self):
 		"""Start the simulation."""
 
 		# reset the simulator
-		if self.sim is not None:
-			self.sim.reset()
+		self.sim.reset()
 
 		# load the code
 		try:
@@ -219,6 +264,8 @@ class Session(orc.Session):
 			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
 
 		# prepare simulation
+		self.restore_bp = False
+		self.set_breakpoints()
 		self.started.set(True)
 		self.timeout_button.enable()
 		self.date.set(0)
@@ -264,18 +311,18 @@ class Session(orc.Session):
 
 	def step_over(self, interface):
 		"""Perform the execution of the current line."""
+		self.clear_breakpoints()
 		addr = self.sim.next_pc()
-		def is_end(pc):
-			return pc == addr
-		self.stop_on = is_end
+		self.set_breakpoint(addr)
+		self.restore_bp = True
 		self.go_on(interface)
 
 	def run_to(self, interface):
 		"""Run to the current cursor position."""
 		if ~self.current_addr is not None:
-			def is_end(pc):
-				return ~self.current_addr == pc
-			self.stop_on = is_end
+			self.clear_breakpoints()
+			self.set_breakpoint(~self.current_addr)
+			self.restore_bp = True
 			self.go_on(interface)
 
 	def go_on(self, interface):
@@ -332,6 +379,7 @@ class Session(orc.Session):
 				pane.on_compiled(self)
 
 			# put default breakpoints
+			self.breakpoints.clear()
 			for addr in self.bp_to_remove:
 				self.breakpoints.remove(addr)
 			self.bp_to_remove = set()
@@ -341,7 +389,6 @@ class Session(orc.Session):
 				if addr is not None:
 					self.breakpoints.add(addr)
 					self.bp_to_remove.add(addr)
-
 
 	def print_line(self, line):
 		m = LINE_RE.match(line)
@@ -562,7 +609,6 @@ class Session(orc.Session):
 		for pane in self.panes:
 			pane.on_project_set(self, project)
 		self.compiled.set(False)
-
 
 	def cleanup_project(self, after):
 		"""Cleanup a project before closing. After is the function that

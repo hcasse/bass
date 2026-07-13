@@ -88,7 +88,7 @@ class Simulator(arch.Simulator):
 
 		# initialize all
 		self.labels = None
-		self.breaks = []
+		self.breaks = set()
 		self.pf = None
 		self.mem = None
 		self.loader = None
@@ -130,13 +130,27 @@ class Simulator(arch.Simulator):
 			arm.loader_close(self.loader)
 			self.loader = None
 
-	def set_break(self, addr):
-		self.breaks.append(addr)
+	def set_breakpoint(self, addr):
+		self.breaks.add(addr)
+		print(f"DEBUG: set BP @ {hex(addr)}")
+
+	def clear_breakpoint(self, addr):
+		self.breaks.discard(addr)
+		print(f"DEBUG: remove BP @ {hex(addr)}")
 
 	def step(self):
 		assert self.sim is not None
 		arm.step(self.sim)
 		self.date += 1
+
+	def run(self, time):
+		assert self.sim is not None
+		stop_date = self.date + time
+		while self.date < stop_date:
+			self.step()
+			if self.breaks and self.get_pc() in self.breaks:
+				return arch.Run.BP
+		return arch.Run.OK
 
 	def get_pc(self):
 		return arm.next_addr(self.sim)

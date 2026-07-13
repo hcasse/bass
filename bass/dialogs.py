@@ -5,9 +5,9 @@ from orchid import \
 	HGroup, VGroup, Var, Action, Field, Key, hspring, Button, Predicate, \
 		MessageLabel
 from orchid import dialog, MessageType
-from bass import project_name_pred
 from orchid import group
 from orchid import doc
+from bass import project_name_pred
 
 class RenameDialog(dialog.Base):
 	"""An action tor rename the project."""

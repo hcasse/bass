@@ -19,7 +19,6 @@
 """Pane for managing I/O component in board simulation."""
 
 from csim.ui import Display
-import orchid as orc
 from bass import ApplicationPane
 
 class Pane(Display, ApplicationPane):

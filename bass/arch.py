@@ -18,7 +18,14 @@
 
 """Common architecture useful definitions."""
 
+from enum import IntEnum
+
 from bass import Format, MessageException, RegDisplay
+
+class Run(IntEnum):
+	OK = 0		# execution reached end
+	BP = 1		# breakpoint encountered
+
 
 class SimException(MessageException):
 	"""Exception thrown when an error arises in the simulation."""
@@ -178,6 +185,11 @@ class Simulator:
 	def step(self):
 		"""Execute the current instruction and stop."""
 		pass
+
+	def run(self, time):
+		"""Run the simulator the time in cycle.
+		Returns a result of type Run."""
+		return Run.OK
 
 	def get_register(self, reg):
 		"""Get the value of a register."""

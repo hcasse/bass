@@ -2,16 +2,16 @@
 
 ## Global Window
 
-[ ] Resizing for editor/memory.
-[ ] Resizing for Console/editor-memory.
-[ ] Resizing register and the rest.
-[ ] Support for board input-output.
-[ ] Display more on about.
-[ ] Add UT3 ads.
-[ ] Provide help.
+[x] Resizing for editor/memory.
+[x] Resizing for Console/editor-memory.
+[x] Resizing register and the rest.
+[x] Support for board input-output.
+[x] Display more on about.
+[x] Add UT3 ads.
+[x] Provide help.
 [ ] Save all regularly and at end of session.
 [ ] Add file display.
-[ ] Whern simulation ended, display and focus automatically on source pane.
+[x] Whern simulation ended, display and focus automatically on source pane.
 
 Project menu :
 [X] delete
@@ -71,17 +71,17 @@ Add toolbar for:
 ## System
 
 [ ] Support encrypting of passwords.
-[ ] Add template with input-output.
+[x] Add template with input-output.
 [ ] Implements keyword retrieval.
-[ ] Manage removal of anonymous too old.
+[x] Manage removal of anonymous too old.
 [ ] Add administrative pages :
 	* shutdown of the system
 	* statistics
 	* log of connection
-[ ] Management of groups.
+[x] Management of groups.
 [ ] Teacher interface.
 [ ] DDoS protection + black list.
-[ ] Better and more informative display of templates and projects.
+[x] Better and more informative display of templates and projects.
 [ ] User limitation connection (IPs, hours, etc).
 
 
