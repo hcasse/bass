@@ -154,3 +154,17 @@ class Simulator(arch.Simulator):
 
 	def get_board(self):
 		return self.board
+
+	def set_breakpoint(self, addr):
+		self.board.get_core().set_break(addr)
+
+	def clear_breakpoint(self, addr):
+		self.board.get_core().clear_break(addr)
+
+	def run(self, time):
+		res = self.board.run(time)
+		if res == 0:
+			return arch.Run.OK
+		else:
+			return arch.Run.BP
+

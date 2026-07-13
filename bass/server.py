@@ -264,8 +264,6 @@ class Session(orc.Session):
 			self.console.append(orc.text(orc.ERROR, f"ERROR: {e}"))
 
 		# prepare simulation
-		self.restore_bp = False
-		self.set_breakpoints()
 		self.started.set(True)
 		self.timeout_button.enable()
 		self.date.set(0)
@@ -380,9 +378,7 @@ class Session(orc.Session):
 
 			# put default breakpoints
 			self.breakpoints.clear()
-			for addr in self.bp_to_remove:
-				self.breakpoints.remove(addr)
-			self.bp_to_remove = set()
+			self.restore_bp = False
 			disasm = self.project.get_disasm()
 			for lab in ["main", "_exit"]:
 				addr = disasm.find_label(lab)
