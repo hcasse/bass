@@ -563,6 +563,7 @@ class Session(orc.Session):
 					self.get_application().log(f"cannot open project {DEBUG_PROJECT}")
 					sys.exit(1)
 
+		self.add_page(self.page)
 		return self.page
 
 
@@ -1074,6 +1075,10 @@ if __name__ == '__main__':
 	DEBUG_USER = args.debug_user
 	DEBUG_PROJECT = args.debug_project
 	DEBUG = args.debug or DEBUG_USER or DEBUG_PROJECT
+
+	# switch locale to english
+	os.environ["LANG"] = "en.UTF-8"
+	os.environ["LC_ALL"] = "en.UTF-8"
 
 	# run the server
 	try:

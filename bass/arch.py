@@ -38,9 +38,10 @@ class AbstractRegister:
 	"""Represents a register in the simulator. Handle may be any value to
 	represent register in the underlying simulator."""
 
-	def __init__(self, name, handle=None):
+	def __init__(self, name, handle=None, aliases=None):
 		self.name = name
 		self.handle = handle
+		self.aliases = [] if aliases is None else aliases
 
 	def get_name(self):
 		"""Get the register name."""
@@ -58,12 +59,16 @@ class AbstractRegister:
 		"""Get the handle of this register."""
 		return self.handle
 
+	def get_aliases(self):
+		"""Get the aliases names of the register."""
+		return self.aliases
+
 
 class Register(AbstractRegister):
 	"""Simple decimal register displat."""
 
-	def __init__(self, name, index, format=RegDisplay.SIGNED, handle=None):
-		AbstractRegister.__init__(self, name, handle)
+	def __init__(self, name, index, format=RegDisplay.SIGNED, handle=None, aliases=None):
+		AbstractRegister.__init__(self, name, handle, aliases)
 		self.index = index
 		self.fmt = format
 
@@ -81,8 +86,8 @@ class Register(AbstractRegister):
 class AddrRegister(Register):
 	"""Register containing an address."""
 
-	def __init__(self, name, index, handle=None):
-		Register.__init__(self, name, index, RegDisplay.HEX, handle)
+	def __init__(self, name, index, handle=None, aliases=None):
+		Register.__init__(self, name, index, RegDisplay.HEX, handle, aliases)
 
 	def format(self, value):
 		return f"{value:08x}"
@@ -121,8 +126,8 @@ class CPSRegister(Register):
 
 	FORMAT = Format(None, do_format, custom = True)
 
-	def __init__(self, name, index, handle=None):
-		Register.__init__(self, "CPSR", index, self.FORMAT, handle)
+	def __init__(self, name, index, handle=None, aliases=None):
+		Register.__init__(self, "CPSR", index, self.FORMAT, handle, aliases)
 
 
 class Arch:

@@ -28,11 +28,11 @@ class Arch(arch.Arch):
 	@staticmethod
 	def makeArmR(reg, i):
 		if i == 13:
-			return arch.AddrRegister("SP", i, handle=reg)
+			return arch.AddrRegister("SP", i, handle=reg, aliases=["R13"])
 		elif i == 14:
-			return arch.AddrRegister("LR", i, handle=reg)
+			return arch.AddrRegister("LR", i, handle=reg, aliases=["R14"])
 		elif i == 15:
-			return arch.AddrRegister("PC", i, handle=reg)
+			return arch.AddrRegister("PC", i, handle=reg, aliases=["R15"])
 		else:
 			return arch.Register(reg.make_name(i), i, handle=reg)
 
@@ -47,6 +47,7 @@ class Arch(arch.Arch):
 		self.core = core
 		self.registers = None
 		self.name = self.core.get_name()
+		self.reg_map = {}
 
 	def get_registers(self):
 		"""Get the list of register banks."""
@@ -58,17 +59,21 @@ class Arch(arch.Arch):
 		return self.registers
 
 	def find_register(self, name):
-		for reg in self.get_registers():
-			if name == reg.get_name():
-				return reg
-		return None
+		try:
+			return self.reg_map[name.upper()]
+		except KeyError:
+			return None
 
 	def make_register(self, reg, i):
 		"""Build a BASS register from a CSIM Register."""
 		try:
-			return self.MAP[(self.core.get_component_name(), reg.get_name())](reg, i)
+			reg = self.MAP[(self.core.get_component_name(), reg.get_name())](reg, i)
 		except KeyError:
-			return arch.Register(reg.make_name(i), i, handle=reg)
+			reg = arch.Register(reg.make_name(i), i, handle=reg)
+		self.reg_map[reg.get_name()] = reg
+		for alias in reg.get_aliases():
+			self.reg_map[alias] = reg
+		return reg
 
 
 class Simulator(arch.Simulator):

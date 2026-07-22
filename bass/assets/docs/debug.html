@@ -4,11 +4,115 @@
 
 	<h1>Running the debugger</h1>
 
+	<p>Once the debugger is started, several changes pops on the main window:</p>
+
+	<ul>
+		<li>The register window, to the left, displays the registers and their values (and is enabled).</li>
+		<li>On the right, the memory window is also enabled.</li>
+		<li>In the center, a new pane called <i>Disassembly</i> is shown and displays the program in memory and the current instruction (yellow background).
+	</ul>
+
+	<p>The top-level bar is also changed and new buttons are now enable. It looks like:</p>
+	<p><img src="toolbar-debug.png"/></p>
+
+	<p>In order, the buttons allows:</p>
+	<ul>
+		<li><b>Check</b>: performs the compilation as in editing mode.</li>
+		<li><b>Stop</b>: now displayed in red, stops the debugger.</li>
+		<li><b>Step</b>: executes one instruction.</li>
+		<li><b>Step To</b>: executes to the next line (without entering in a called subprogram).</li>
+		<li><b>Execute To</b>: if an instruction is selected (blue background), the execution runs to this one.</li>
+		<li><b>Continue</b>: executes the program until a breakpoint is reached.</li>
+		<li><b>Pause</b>: stops execution started with <b>Continue</b>.</li>
+		<li><b>Reser</b>: resets the debugger.</li>
+	</ul>
+
+	<p>The user can put breakpoints on any instruction of the program by clicking on
+	the left of the instruction. Breakpoints are identified by big red dots and
+	re-clicking on them remove the corresponding breakpoints.</p>
+
+	<p>Breakpoints are used during the program execution (button <b>Continue</b>)
+	to stop the program at some points in order to examine the state (registers, memory, etc) of the program and detect errors.</p>
+
+	<p>At debugger start-up, some breakpoint are automatically installed by <b>Bass</b>
+	like on <code>_exit</code> in the screenshot below. Without such a breakpoint,
+	the execution would go one without noticing the executed code is not legal
+	code.</p>
+
+
+	<p><img src="disasm.png"/></p>
+
+
 	<h1>Examining the registers</h1>
+
+	<p>Left-pane provides a view of the microprocessor registers. The list and the
+	type of registers depends on the actual model of the core. The view below
+	shows the registers of an ARM core made of generic registers R0-R12 and four
+	specialized registers: SP (stack pointer), LR (link register), PC (Program Counter)
+	and SR (Status Register).</p>
+
+	<p><img src="registers.png/"/></p>
+
+	<p>In this pane, you can observe the values of the registers in real-time
+	during the program execution. Between to execution operations, changed registers
+	are figured in red. You can also change register value by clicking on this value.</p>
+
+	<p>You can also change the way the value of a register is displayed by clicking on the floatting menu button (in orange) on the right of the register value. The following displays are available:</p>
+
+	<ul>
+		<li><b>Default</b>: initial default display.</li>
+		<li><b>Signed</b>: signed decimal.</li>
+		<li><b>Unsigned</b>: unsigned decimal.</li>
+		<li><b>Hexadecimal</b>: unsigned hexadecimal.</li>
+		<li><b>Binary</b>: unsigned binary.</li>
+	</ul>
+
 
 	<h1>Examining the memory</h1>
 
+	<p>The right pane display a part of the whole memory.</p>
+
+	<p><img src="memory.png"/></p>
+
+	<p>To select the displayed memory, you have to, in the control bar:</p>
+	<ol>
+		<li>Select the adress.</li>
+		<li>Select the count of element to display (default 64).</li>
+		<li>Select the element type (Byte, signed/unsigned decimal/hexadecimal 16/32-bit, character).
+		<li>Click on the <b>Check</b> button.</li>
+	</ol>
+
+	<p>And the memory is displayed with the corresponding address. The blue element
+	is the first one of the target address while the displayed line are aligned on a 16-byte boundary.</p>
+
+	<p>As for registers, during the execution, the changed memory elements are
+	represented in red.</p>
+
+	<p>The address field supports several formats:</p>
+	<ul>
+		<li>Decimal or <code>0x</code>-prefixed hexadecimal constant address.</li>
+		<li>Name of a label of the program (for example <code>_start</code>).</li>
+		<li>Register name (like <code>R1</code> or <code>SP</code>).
+		<li>Register name <code>+</code>/<code>-</code> constant.</li>
+	</ul>
+
+
 	<h1>Input/Output</h1>
+
+	<p>Depending on the chosen templates, input/output devices may be displayed
+	as in the screenshot below:</p>
+
+	<p><img src="io.png"/></p>
+
+	<p>In this example, two devices are figured:</p>
+	<ul>
+		<li>One button you can push during the execution.</li>
+		<li>One LED that may be switched on or off.<li>
+	</ul>
+
+	<p>These devices are controlled by the program and you can interact
+	with during its execution as with a real board. The way the interaction
+	is performed depends on the type of the device.</p>
 
 </body>
 </html>
