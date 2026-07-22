@@ -217,6 +217,8 @@ class Project:
 
 	def get_template(self):
 		"""Get the template of the project."""
+		if self.template is None:
+			self.load()
 		return self.template
 
 	def get_path(self):
@@ -231,6 +233,8 @@ class Project:
 
 	def get_exec_path(self):
 		"""Get the path of the executable."""
+		if self.template is None:
+			self.load()
 		return os.path.join(self.get_path(), self.template.get_exec_name())
 
 	def get_sources(self):
@@ -243,7 +247,7 @@ class Project:
 	def add_file(self, file):
 		"""Add a file to a project."""
 		if self.files is None:
-			self.load()
+			self._prepare()
 		file.project = self
 		self.files.append(file)
 
@@ -319,6 +323,8 @@ class Project:
 	def new_sim(self):
 		"""Start simulator for the project executable.
 		Return the simulator. If there is an error, raises a SimException."""
+		if self.template is None:
+			self.load()
 		return self.template.get_simulator()
 
 	def get_disasm(self):

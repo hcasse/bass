@@ -981,7 +981,7 @@ class Application(orc.Application):
 		try:
 			return self.templates[name]
 		except KeyError:
-			return None
+			return Template(self, "undefined")
 
 	def get_templates(self):
 		"""Get the templates."""
